@@ -25,8 +25,8 @@ if [[ $status == *"Disconnected"* ]]; then
   printf "%s" "{\"text\":\"Disconnected\",\"tooltip\":\"$tooltip\",\"class\":\"disconnected\",\"alt\":\"disconnected\"}"
 
 elif [[ $status == *"Connected"* ]]; then
-	stts_city="$(printf "%s" "$status" | grep "City" | cut -d ":" -f 2 | tr -d ' ')"
-	stts_host="$(printf "%s" "$status" | grep "Hostname" | cut -d ":" -f 2 | tr -d ' ' | cut -d "." -f 1)"
+	stts_city="$(echo "$status" | grep "City" | cut -d ":" -f 2 | tr -d ' ')"
+	stts_host="$(echo "$status" | grep "Hostname" | cut -d ":" -f 2 | tr -d ' ' | cut -d "." -f 1)"
  	printf "%s" "{\"text\":\"$stts_city ($stts_host)\",\"tooltip\":\"$tooltip\",\"class\":\"connected\",\"alt\":\"connected\"}"
   
 else
