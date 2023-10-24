@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # WOFI NETWORK-MANAGER
 #
@@ -18,17 +18,31 @@ echoexit() {
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nmcli > /dev/null || echoexit "'nmcli' not found."
 
+# config
+xoffset=710
+yoffset=275
+# show=drun
+width=500
+height=500
+always_parse_args=true
+show_all=true
+print_command=true
+layer=overlay
+insensitive=true
+prompt="Network"
+normal_window=false
+
 # Default Values
-LOCATION=0
+LOCATION=3
 QRCODE_LOCATION=$LOCATION
 Y_AXIS=0
-X_AXIS=0
+X_AXIS=-120
 NOTIFICATIONS_INIT="off"
 QRCODE_DIR="/tmp/"
 WIDTH_FIX_MAIN=1
 WIDTH_FIX_STATUS=10
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PASSWORD_ENTER="if connection is stored,hit enter/esc."
+PASSWORD_ENTER="Enter password. If connection is stored, hit Return/ESC."
 WIRELESS_INTERFACES=($(nmcli device | awk '$2=="wifi" {print $1}'))
 WIRELESS_INTERFACES_PRODUCT=()
 WLAN_INT=0
@@ -73,7 +87,7 @@ function wofi_menu() {
 }
 function wofi_cmd() {
 	{ [[ -n "${1}" ]] && WIDTH=$(echo -e "$1" | awk '{print length}' | sort -n | tail -1) && ((WIDTH += $2)) && ((WIDTH = WIDTH / 2)); } || { ((WIDTH = $2 / 2)); }
-	wofi -dmenu -i --normal-window=false -location "$LOCATION" -yoffset "$Y_AXIS" -xoffset "$X_AXIS" $3 -theme "$RASI_DIR" -theme-str 'window{width: '$WIDTH'em;}textbox-prompt-colon{str:"'$PROMPT':";}'"$4"''
+	wofi --dmenu --normal-window=false --location=$LOCATION --y=$Y_AXIS --x=$X_AXIS $3 --theme "$RASI_DIR" --theme-str 'window{width: '$WIDTH'em;}textbox-prompt-colon{str:"'$PROMPT':";}'"$4"''
 }
 function change_wireless_interface() {
 	{ [[ ${#WIRELESS_INTERFACES[@]} -eq "2" ]] && { [[ $WLAN_INT -eq "0" ]] && WLAN_INT=1 || WLAN_INT=0; }; } || {
@@ -120,7 +134,7 @@ function connect() {
 	{ [[ $(nmcli dev wifi con "$1" password "$2" ifname "${WIRELESS_INTERFACES[WLAN_INT]}" | grep -c "successfully activated") -eq "1" ]] && notification "Connection_Established" "You're now connected to Wi-Fi network '$1'"; } || notification "Connection_Error" "Connection can not be established"
 }
 function enter_passwword() {
-	PROMPT="Enter_Password" && PASS=$(echo "$PASSWORD_ENTER" | wofi_cmd "$PASSWORD_ENTER" 4 "-password")
+	PROMPT="Enter_Password" && PASS=$(echo "$PASSWORD_ENTER" | wofi_cmd "$PASSWORD_ENTER" 4 "--password")
 }
 function enter_ssid() {
 	PROMPT="Enter_SSID" && SSID=$(wofi_cmd "" 40)
