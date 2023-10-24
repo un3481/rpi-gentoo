@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# PACMAN UPDATES: Waybar Module for checking Pacman updates
+# WAYBAR CHECKUPDATES
 #
 # Source: https://github.com/coffebar/waybar-module-pacman-updates 
 #

@@ -1,19 +1,9 @@
 #!/usr/bin/env bash
 #
-# BLUETOOTH-WOFI
+# WOFI BLUETOOTH
 #
 # Source: https://github.com/arpn/wofi-bluetooth
 #
-# Forked from the excellent rofi-bluetooth script by Nick Clyde
-# (https://github.com/nickclyde/rofi-bluetooth). Simply calls wofi
-# instead of rofi.
-#
-# A script that generates a wofi menu that uses bluetoothctl to
-# connect to bluetooth devices and display status info.
-#
-# Depends on:
-#   Arch repositories: wofi, bluez-utils (contains bluetoothctl)
-
 
 # exit when any command fails
 set -T
@@ -25,8 +15,8 @@ echoexit() {
 }
 
 # Checking dependencies:
-whereis bluetoothctl > /dev/null || echoexit "'bluetoothctl' not found."
 whereis wofi > /dev/null || echoexit "'wofi' not found."
+whereis bluetoothctl > /dev/null || echoexit "'bluetoothctl' not found."
 
 # Constants
 divider="---------"

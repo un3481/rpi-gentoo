@@ -1,6 +1,8 @@
 #!/bin/sh
 #
-#   NORDVPN-STATUS: A part of wofi-nordvpn
+# WAYBAR NORDVPN
+#
+# Source: https://github.com/etrigan63/wofi-nordvpn
 #
 
 # exit when any command fails

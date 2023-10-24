@@ -1,6 +1,8 @@
 #!/bin/sh
 #
-#   NORDVPN-WOFI: A part of wofi-nordvpn
+# WOFI NORDVPN
+#
+# Source: https://github.com/etrigan63/wofi-nordvpn
 #
 
 # exit when any command fails
@@ -13,8 +15,8 @@ echoexit() {
 }
 
 # Checking dependencies:
-whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 whereis wofi > /dev/null || echoexit "'wofi' not found."
+whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 
 # Menu command, should read from stdin and write to stdout.
 wofi_command="wofi --dmenu --location=3 --x=-320"
