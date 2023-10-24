@@ -1,9 +1,7 @@
 {
-  "layer": "top", // Waybar at top layer
-  "position": "top", // Waybar at the bottom of your screen
-  "height": 24, // Waybar height
-  // "width": 1366, // Waybar width
-  // Choose the order of the modules
+  "layer": "top",
+  "position": "top",
+  "height": 24,
   "modules-left": ["sway/workspaces", "sway/mode"],
   "modules-center": ["sway/window"],
   "modules-right": [
@@ -37,7 +35,6 @@
     "format": "<span style=\"italic\">{}</span>"
   },
   "tray": {
-    // "icon-size": 21,
     "spacing": 10
   },
   "clock": {
@@ -52,7 +49,6 @@
     "on-click": "alacritty -e htop"
   },
   "network": {
-    // "interface": "wlp2s0", // (Optional) To force the use of this interface
     "format": "󰛵",
     "format-wifi": "",
     "format-ethernet": "󰱓",
@@ -60,19 +56,18 @@
     "format-disabled": "󰅛",
     "tooltip-format-ethernet": "Interface: Ethernet\nInterface Name: {ifname}\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
     "tooltip-format-wifi": "Interface: Wireless\nESSID: {essid}\nSignal Strength: {signalStrength}%\nFrequency: {frequency}GHz\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
-    "on-click": "$HOME/.config/waybar/custom_modules/network-wofi.sh"
+    "on-click": "$HOME/.config/waybar/custom_modules/wofi-network.sh"
   },
   "bluetooth": {
-    // "controller": "controller1", // specify the alias of the controller if there are more than 1 on the system
     "format": "  {status} 󰂯 ",
     "format-on": "  󰂯 ",
     "format-off": "  󰂲 ",
-    "format-disabled": "", // an empty format will hide the modules
+    "format-disabled": "",
     "format-connected": "  Connected ({num_connections}) 󰂱 ",
     "tooltip-format": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {num_connections}",
     "tooltip-format-enumerate-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {device_enumerate}",
     "tooltip-format-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevice:\n\tAlias: {device_alias}\n\tAddress: {device_address}",
-    "on-click": "$HOME/.config/waybar/custom_modules/bluetooth-wofi.sh"
+    "on-click": "$HOME/.config/waybar/custom_modules/wofi-bluetooth.sh"
   },
   "wireplumber": {
 	  "format": "  {volume}% {icon} ",
@@ -98,7 +93,7 @@
 	  "return-type": "json",
     "interval": 10,
     "exec": "$HOME/.config/waybar/custom_modules/nordvpn.sh",
-    "on-click": "$HOME/.config/waybar/custom_modules/nordvpn-wofi.sh"
+    "on-click": "$HOME/.config/waybar/custom_modules/wofi-nordvpn.sh"
   },
   "custom/checkupdates": {
     "format": "  {} {icon} ",
