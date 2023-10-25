@@ -17,6 +17,7 @@ echoexit() {
 # Checking dependencies:
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nmcli > /dev/null || echoexit "'nmcli' not found."
+whereis qrencode > /dev/null || echoexit "'qrencode' not found."
 
 # Menu command, should read from stdin and write to stdout.
 wofi_command="wofi --dmenu --location=3 --x=-130"
@@ -31,39 +32,6 @@ QRCODE_DIR="/tmp/"
 WIDTH_FIX_MAIN=1
 WIDTH_FIX_STATUS=10
 PASSWORD_ENTER="Enter password. Or press Return/ESC if connection is stored."
-
-
-# list all interfaces
-function list_interfaces() {
- 	local interfaces
-	interfaces=$(nmcli device status)
-
-	# get wired interfaces
-	WIRED_INTERFACES=($(echo -e "$interfaces" | awk '$2=="ethernet" {print $1}'))
-	WIRED_INTERFACES_PRODUCT=()
-	for i in "${WIRED_INTERFACES[@]}"; do
-		WIRED_INTERFACES_PRODUCT+=(
-			"$(nmcli -f general.product device show "$i" | awk '{print $2}')"
-		);
-	done
-
-	# Use first interface by default
-	IWIRED="${WIRED_INTERFACES[0]}"
-	IWIRED_PRODUCT="${WIRED_INTERFACES_PRODUCT[0]}"
-
-	# get wireless interfaces
-	WIRELESS_INTERFACES=($(echo -e "$interfaces" | awk '$2=="wifi" {print $1}'))
-	WIRELESS_INTERFACES_PRODUCT=()
-	for i in "${WIRELESS_INTERFACES[@]}"; do 
-		WIRELESS_INTERFACES_PRODUCT+=(
-			"$(nmcli -f general.product device show "$i" | awk '{print $2}')"
-		);
-	done
-
-	# Use first interface by default
-	IWIRELESS="${WIRELESS_INTERFACES[0]}"
-	IWIRELESS_PRODUCT="${WIRELESS_INTERFACES_PRODUCT[0]}"
-}
 
 # menu choices for device selection
 function init_menu_choices() {
