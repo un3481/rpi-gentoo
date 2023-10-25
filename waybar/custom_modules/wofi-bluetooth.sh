@@ -19,11 +19,10 @@ whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis bluetoothctl > /dev/null || echoexit "'bluetoothctl' not found."
 
 # Constants
-divider="---------"
-goback="Back"
+divider="---------------------"
 
 # Rofi command to pipe into, can add any options here
-wofi_command="wofi --dmenu --location=3 --x=-160"
+wofi_command="wofi --dmenu --location=3 --x=-160 --cache-file=/tmp/wofi-dump-cache"
 
 # Checks if bluetooth controller is powered on
 power_on() {
@@ -51,10 +50,10 @@ toggle_power() {
 # Checks if controller is scanning for new devices
 scan_on() {
   if bluetoothctl show | grep -q "Discovering: yes"; then
-    echo "Scan (On)"
+    echo "scan [on]"
     return 0
   else
-    echo "Scan (Off)"
+    echo "scan [off]"
     return 1
   fi
 }
@@ -76,10 +75,10 @@ toggle_scan() {
 # Checks if controller is able to pair to devices
 pairable_on() {
   if bluetoothctl show | grep -q "Pairable: yes"; then
-    echo "Pairable (On)"
+    echo "pairable [yes]"
     return 0
   else
-    echo "Pairable (Off)"
+    echo "pairable [no]"
     return 1
   fi
 }
@@ -98,10 +97,10 @@ toggle_pairable() {
 # Checks if controller is discoverable by other devices
 discoverable_on() {
   if bluetoothctl show | grep -q "Discoverable: yes"; then
-    echo "Discoverable (On)"
+    echo "discoverable [yes]"
     return 0
   else
-    echo "Discoverable (Off)"
+    echo "discoverable [no]"
     return 1
   fi
 }
@@ -142,10 +141,10 @@ toggle_connection() {
 device_paired() {
     device_info=$(bluetoothctl info "$1")
     if echo "$device_info" | grep -q "Paired: yes"; then
-      echo "Paired (Yes)"
+      echo "paired [yes]"
       return 0
     else
-      echo "Paired (No)"
+      echo "paired [no]"
       return 1
     fi
 }
@@ -165,10 +164,10 @@ toggle_paired() {
 device_trusted() {
     device_info=$(bluetoothctl info "$1")
     if echo "$device_info" | grep -q "Trusted: yes"; then
-      echo "Trusted (Yes)"
+      echo "trusted [yes]"
         return 0
     else
-      echo "Trusted (No)"
+      echo "trusted [no]"
         return 1
     fi
 }
@@ -222,13 +221,13 @@ device_menu() {
 
     # Build options
     if device_connected $mac; then
-      connected="Connected (Yes)"
+      connected="connected [yes]"
     else
-      connected="Connected (No)"
+      connected="connected [no]"
     fi
     paired=$(device_paired $mac)
     trusted=$(device_trusted $mac)
-    options="$connected\n$paired\n$trusted\n$divider\n$goback"
+    options="$connected\n$paired\n$trusted"
 
     # Open wofi menu, read chosen option
     chosen="$(echo -e "$options" | $wofi_command -p "$device_name" --width="200" --height="230" )"
@@ -247,8 +246,7 @@ device_menu() {
         $trusted)
             toggle_trust $mac
             ;;
-        $goback)
-            show_menu
+        *)
             ;;
     esac
 }
@@ -257,7 +255,7 @@ device_menu() {
 show_menu() {
     # Get menu options
     if power_on; then
-        power="Turn Off"
+        power="turn off"
 
         # Human-readable names of devices, one per line
         # If scan is off, will only list paired devices
@@ -274,7 +272,7 @@ show_menu() {
         width="200"
         height="240"
     else
-        power="Turn On"
+        power="turn on"
         options="$power"
         
         width="100"
@@ -317,3 +315,6 @@ case "$1" in
         show_menu
         ;;
 esac
+
+# do not keep cache
+rm "/tmp/wofi-dump-cache"

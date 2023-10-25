@@ -62,7 +62,7 @@
     "format": "  {status} 󰂯 ",
     "format-on": "  󰂯 ",
     "format-off": "  󰂲 ",
-    "format-disabled": "",
+    "format-disabled": "  󰂲 ",
     "format-connected": "  Connected ({num_connections}) 󰂱 ",
     "tooltip-format": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {num_connections}",
     "tooltip-format-enumerate-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {device_enumerate}",

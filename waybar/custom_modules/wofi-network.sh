@@ -18,16 +18,16 @@ echoexit() {
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nmcli > /dev/null || echoexit "'nmcli' not found."
 whereis qrencode > /dev/null || echoexit "'qrencode' not found."
+whereis nm-connection-editor > /dev/null || echoexit "'nm-connection-editor' not found."
 
 # Menu command, should read from stdin and write to stdout.
-wofi_command="wofi --dmenu --location=3 --x=-130"
+wofi_command="wofi --dmenu --location=3 --x=-130 --cache-file=/tmp/wofi-dump-cache"
 
 # Default Values
 LOCATION=3
 QRCODE_LOCATION=$LOCATION
 Y_AXIS=0
 X_AXIS=-120
-NOTIFICATIONS_INIT="off"
 QRCODE_DIR="/tmp/"
 WIDTH_FIX_MAIN=1
 WIDTH_FIX_STATUS=10
@@ -36,56 +36,62 @@ PASSWORD_ENTER="Enter password. Or press Return/ESC if connection is stored."
 # menu choices for device selection
 function init_menu_choices() {
 
-	local choices actions device_status devices
+	local choices actions networking_active device_status devices
 	
 	choices=""
 	actions=""
 
-	device_status=$(nmcli device status)
-	devices=()
-	IFS=$'\n' read -rd '' -a devices <<< "$device_status"
+	if [[ "$(nmcli networking)" == "enabled" ]]; then
 
-	for i in "${devices[@]}"; do
-		local device_name device_type device_state device_connection
-		
-		device_name=$(echo -e "$i" | awk '{print $1}')
-		device_type=$(echo -e "$i" | awk '{print $2}')
+		device_status=$(nmcli device status)
+		devices=()
+		IFS=$'\n' read -rd '' -a devices <<< "$device_status"
 
-		local sp ss ep es
-		sp=${devices[0]%%"STATE"*}
-		ss=${#sp}
-		ep=${devices[0]%%"CONNECTION"*}
-		es=${#ep}
-		device_state=${i:ss:((es - ss))}
-		device_state="${device_state#"${device_state%%[![:space:]]*}"}"
+		for i in "${devices[@]}"; do
+			local device_name device_type device_state device_connection
 
-		device_connection=$(echo -e "$i" | sed "s/$device_state/\:/g" | cut -d ":" -f 2)
-		device_connection="${device_connection#"${device_connection%%[![:space:]]*}"}"
+			device_name=$(echo -e "$i" | awk '{print $1}')
+			device_type=$(echo -e "$i" | awk '{print $2}')
 
-		if	[[ "$device_type" == "TYPE"     ]] || \
-			[[ "$device_type" == "loopback" ]] || \
-			[[ "$device_type" == "wifi-p2p" ]]; then
-			continue
-		fi
+			local sp ss ep es
+			sp=${devices[0]%%"STATE"*}
+			ss=${#sp}
+			ep=${devices[0]%%"CONNECTION"*}
+			es=${#ep}
+			device_state=${i:ss:((es - ss))}
+			device_state="${device_state#"${device_state%%[![:space:]]*}"}"
 
-		choices="$choices$device_name ($device_type):\n"
-		actions="$actions$device_name ($device_type):\n"
+			device_connection=$(echo -e "$i" | sed "s/$device_state/\:/g" | cut -d ":" -f 2)
+			device_connection="${device_connection#"${device_connection%%[![:space:]]*}"}"
 
-		choices="$choices\tstate: $device_state\n"
-		
-		if [[ "$device_connection" == *"--"* ]]; then
-			continue
-		fi
+			if	[[ "$device_type" == "TYPE"     ]] || \
+				[[ "$device_type" == "loopback" ]] || \
+				[[ "$device_type" == "wifi-p2p" ]]; then
+				continue
+			fi
 
-		choices="$choices\tconnection: $device_connection\n"
-		
-	done
+			choices="$choices$device_name [$device_type]:\n"
+			actions="$actions$device_name [$device_type]:\n"
+
+			choices="$choices\tstate: $device_state\n"
+
+			if [[ "$device_connection" == *"--"* ]]; then
+				continue
+			fi
+
+			choices="$choices\tconnection: $device_connection\n"
+
+		done
+
+		choices="${choices}turn off\n"
+	else
+		choices="${choices}turn on\n"
+	fi
+
+	choices="${choices}open connection editor"
+	
 
 	printf "%b" "$choices&$actions"
-}
-
-function notification() {
-	[[ "$NOTIFICATIONS_INIT" == "on" && -x "$(command -v notify-send)" ]] && notify-send -r "5" -u "normal" $1 "$2"
 }
 
 function wofi_menu() {
@@ -112,27 +118,21 @@ function change_wireless_interface() {
 }
 function scan() {
 	[[ "$WIFI_CON_STATE" =~ "unavailable" ]] && change_wifi_state "Wi-Fi" "Enabling Wi-Fi connection" "on" && sleep 2
-	notification "-t 0 Wifi" "Please Wait Scanning"
 	WIFI_LIST=$(nmcli --fields IN-USE,SSID,SECURITY,BARS device wifi list ifname "${IWIRELESS}" --rescan yes | awk -F'  +' '{ if (!seen[$2]++) print}' | sed "s/^IN-USE\s//g" | sed "/*/d" | sed "s/^ *//" | awk '$1!="--" {print}')
 	update_interfaces_status
-	notification "-t 1 Wifi" "Please Wait Scanning"
 	wofi_menu
 }
 function change_wifi_state() {
-	notification "$1" "$2"
 	nmcli radio wifi "$3"
 }
 function change_wired_state() {
-	notification "$1" "$2"
 	nmcli device "$3" "$4"
 }
 function net_restart() {
-	notification "$1" "$2"
 	nmcli networking off && sleep 3 && nmcli networking on
 }
 function disconnect() {
 	ACTIVE_SSID=$(nmcli -t -f GENERAL.CONNECTION dev show "${IWIRELESS}" | cut -d ':' -f2)
-	notification "$1" "You're now disconnected from Wi-Fi network '$ACTIVE_SSID'"
 	nmcli con down id "$ACTIVE_SSID"
 }
 function check_wifi_connected() {
@@ -140,8 +140,7 @@ function check_wifi_connected() {
 }
 function connect() {
 	check_wifi_connected
-	notification "-t 0 Wi-Fi" "Connecting to $1"
-	{ [[ $(nmcli dev wifi con "$1" password "$2" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]] && notification "Connection_Established" "You're now connected to Wi-Fi network '$1'"; } || notification "Connection_Error" "Connection can not be established"
+	{ [[ $(nmcli dev wifi con "$1" password "$2" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
 }
 function enter_passwword() {
 	PROMPT="Enter_Password" && PASS=$(echo "$PASSWORD_ENTER" | wofi_cmd "$PASSWORD_ENTER" 4 "--password")
@@ -151,8 +150,7 @@ function enter_ssid() {
 }
 function stored_connection() {
 	check_wifi_connected
-	notification "-t 0 Wi-Fi" "Connecting to $1"
-	{ [[ $(nmcli dev wifi con "$1" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]] && notification "Connection_Established" "You're now connected to Wi-Fi network '$1'"; } || notification "Connection_Error" "Connection can not be established"
+	{ [[ $(nmcli dev wifi con "$1" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
 }
 function ssid_manual() {
 	enter_ssid
@@ -170,8 +168,7 @@ function ssid_hidden() {
 			nmcli con modify "$SSID" wifi-sec.key-mgmt wpa-psk
 			nmcli con modify "$SSID" wifi-sec.psk "$PASS"
 		} || [[ $(nmcli -g NAME con show | grep -c "$SSID") -eq "0" ]] && nmcli con add type wifi con-name "$SSID" ssid "$SSID" ifname "${IWIRELESS}"
-		notification "-t 0 Wifi" "Connecting to $SSID"
-		{ [[ $(nmcli con up id "$SSID" | grep -c "successfully activated") -eq "1" ]] && notification "Connection_Established" "You're now connected to Wi-Fi network '$SSID'"; } || notification "Connection_Error" "Connection can not be established"
+		{ [[ $(nmcli con up id "$SSID" | grep -c "successfully activated") -eq "1" ]]; }
 	}
 }
 function interface_status() {
@@ -213,9 +210,9 @@ function vpn() {
 	ACTIVE_VPN=$(nmcli -g NAME,TYPE con show --active | awk '/:vpn/' | sed 's/:vpn.*//g')
 	[[ $ACTIVE_VPN ]] && OPTIONS="Deactive $ACTIVE_VPN" || OPTIONS="$(nmcli -g NAME,TYPE connection | awk '/:vpn/' | sed 's/:vpn.*//g')"
 	VPN_ACTION=$(echo -e "$OPTIONS" | wofi_cmd "$OPTIONS" "$WIDTH_FIX_STATUS" "" "mainbox {children:[listview];}")
-	[[ -n "$VPN_ACTION" ]] && { { [[ "$VPN_ACTION" =~ "Deactive" ]] && nmcli connection down "$ACTIVE_VPN" && notification "VPN_Deactivated" "$ACTIVE_VPN"; } || {
-		notification "-t 0 Activating_VPN" "$VPN_ACTION" && VPN_OUTPUT=$(nmcli connection up "$VPN_ACTION" 2>/dev/null)
-		{ [[ $(echo "$VPN_OUTPUT" | grep -c "Connection successfully activated") -eq "1" ]] && notification "VPN_Successfully_Activated" "$VPN_ACTION"; } || notification "Error_Activating_VPN" "Check your configuration for $VPN_ACTION"
+	[[ -n "$VPN_ACTION" ]] && { { [[ "$VPN_ACTION" =~ "Deactive" ]] && nmcli connection down "$ACTIVE_VPN"; } || {
+		VPN_OUTPUT=$(nmcli connection up "$VPN_ACTION" 2>/dev/null)
+		{ [[ $(echo "$VPN_OUTPUT" | grep -c "Connection successfully activated") -eq "1" ]]; }
 	}; }
 }
 function more_options() {
@@ -288,6 +285,22 @@ for i in "${init_actions[@]}"; do
 		# launch wofi and choose action
 		device_choices=${device_choices%&*}
 		device_choice="$(echo -e "$device_choices" | $wofi_command -p "$init_choice" --width=300 --height=300)"
-
 	fi
 done
+
+case "$init_choice" in
+ 	"turn on")
+        nmcli networking on
+        ;;
+    "turn off")
+        nmcli networking off
+        ;;
+    "open connection editor")
+        nm-connection-editor
+        ;;
+    *)
+        ;;
+esac
+
+# do not keep cache
+rm "/tmp/wofi-dump-cache"
