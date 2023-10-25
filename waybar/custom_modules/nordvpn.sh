@@ -17,21 +17,32 @@ echoexit() {
 # Checking dependencies:
 whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 
-# Get status.
-status="$(nordvpn status | tr -d '\r-' | awk '{$1=$1;print}')"
-tooltip="$(echo -e "$status" | sed -z 's/\n/\\n/g')"
-tooltip="${tooltip::-2}"
+# nordvpn waybar module json format
+waybar_json() {
+  local status tooltip
 
-# Check status
-if [[ $status == *"Disconnected"* ]]; then
-  printf "%s" "{\"text\":\"Disconnected\",\"tooltip\":\"$tooltip\",\"class\":\"disconnected\",\"alt\":\"disconnected\"}"
+  # get status
+  status="$(nordvpn status | tr -d '\r-' | awk '{$1=$1;print}')"
+  tooltip="$(printf %s "$status" | sed -z 's/\n/\\n/g')"
+  tooltip="${tooltip::-2}"
 
-elif [[ $status == *"Connected"* ]]; then
-	stts_city="$(echo -e "$status" | grep "City" | cut -d ":" -f 2 | tr -d ' ')"
-	stts_host="$(echo -e "$status" | grep "Hostname" | cut -d ":" -f 2 | tr -d ' ' | cut -d "." -f 1)"
- 	printf "%s" "{\"text\":\"$stts_city ($stts_host)\",\"tooltip\":\"$tooltip\",\"class\":\"connected\",\"alt\":\"connected\"}"
-  
-else
-  printf "%s" "{\"text\":\"Unknown\",\"tooltip\":\"Unable to access daemon.\",\"class\":\"unknown\",\"alt\":\"unknown\"}"
-fi
+  # if status disconnected
+  if [[ $status == *"Disconnected"* ]]; then
+    printf %s "{\"text\":\"Disconnected\",\"tooltip\":\"$tooltip\",\"class\":\"disconnected\",\"alt\":\"disconnected\"}"
 
+  # if status connected
+  elif [[ $status == *"Connected"* ]]; then
+    local city host
+  	city="$(printf %s "$status" | grep "City" | cut -d ":" -f 2 | tr -d ' ')"
+  	host="$(printf %s "$status" | grep "Hostname" | cut -d ":" -f 2 | tr -d ' ' | cut -d "." -f 1)"
+   	
+    printf %s "{\"text\":\"$city ($host)\",\"tooltip\":\"$tooltip\",\"class\":\"connected\",\"alt\":\"connected\"}"
+
+  # if status unknown
+  else
+    printf %s "{\"text\":\"Unknown\",\"tooltip\":\"Unable to access daemon.\",\"class\":\"unknown\",\"alt\":\"unknown\"}"
+  fi
+}
+
+# main
+waybar_json

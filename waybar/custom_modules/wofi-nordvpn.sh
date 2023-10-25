@@ -19,97 +19,108 @@ whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 
 # Menu command, should read from stdin and write to stdout.
-wofi_command="wofi --dmenu --location=3 --x=-320"
+wofi_command="wofi --dmenu --location=3 --cache-file=/tmp/wofi-dump-cache"
 
-init_menu() {
-    # Initial menu.
-    local choices
-    choices="connect\ndisconnect\nstatus\nsettings"
-    printf "%b" "$choices" | $wofi_command -p "Nordvpn" --width="140" --height="200"
-}
-
-connect() {
-    # nordvpn connect options.
+# nordvpn connect options.
+connect_menu() {
     local choices
     choices="default\ncountries\ncities\np2p\nonion"
-    printf "%b" "$choices" | $wofi_command -p "Connect" --width="140" --height="230"
+    printf "%b" "$choices" | $wofi_command -p "Connect" --x=-320 --width="140" --height="230"
 }
 
-countries() {
-    # Country selection.
+# Country selection.
+countries_menu() {
     local choices
     choices="$(nordvpn countries | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)"
-    printf "%s" "$choices" | $wofi_command -p "Countries" --width="200" --height="200"
+    printf "%s" "$choices" | $wofi_command -p "Countries" --x=-320 --width="200" --height="200"
 }
 
-cities() {
-    # City selection.
+# City selection.
+cities_menu() {
     local choices
     choices="$(nordvpn cities "$1" | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)"
-    printf "%s" "$choices" | $wofi_command -p "Cities" --width="180" --height="200"
+    printf "%s" "$choices" | $wofi_command -p "Cities" --x=-320 --width="180" --height="200"
 }
 
-disconnect() {
-    # disconnect
-    nordvpn disconnect
-}
-
-vpn_status() {
-    # Show vpn status.
-
+# Show vpn status.
+status_menu() {
     local choices
     choices="$(nordvpn status | tr -d '\r-' | sed 's/^ *//')"
-
-    # The dynamic_lines option doesn't work for me
-    # for some reason so I'll work around it.
-    lines="$(echo -e "$choices" | wc -l)"
-
-    printf "%s" "$choices" | $wofi_command -p "Status" --width="260" --height="240"
+    printf "%s" "$choices" | $wofi_command -p "Status" --x=-320 --width="260" --height="240"
 }
 
-settings() {
-    # Show vpn settings.
-
+# Show vpn settings.
+settings_menu() {
     local choices
     choices="$(nordvpn settings | tr -d '\r-' | sed 's/^ *//')"
-    printf "%s" "$choices" | $wofi_command -p "Settings" --width="260" --height="240"
+    printf "%s" "$choices" | $wofi_command -p "Settings" --x=-320 --width="260" --height="240"
+}
+
+# opens a wofi menu with nordvpn options to connect
+nordvpn_menu() {
+    local options chosen
+    options="connect\ndisconnect\nstatus\nsettings"
+
+    # launch wofi and choose option
+    chosen=$(printf "%b" "$options" | $wofi_command -p "Nordvpn" --x=-320 --width="140" --height="200")
+
+    # match chosen option to command
+    case $chosen in
+        "connect")
+            case $(connect_menu) in
+                "default")
+                    nordvpn connect
+                    connect_menu
+                    ;;
+                "countries")
+                    local country
+                    country="$(countries_menu)"
+                    if [ -n "$country" ]; then
+                        nordvpn connect "$country"
+                    fi
+                    countries_menu
+                    ;;
+                "cities")
+                    local country
+                    country="$(countries_menu)"
+                    if [ -n "$country" ]; then
+                        local city
+                        city="$(cities_menu "$country")"
+                        if [ -n "$city" ]; then
+                            nordvpn connect "$country" "$city"
+                        fi
+                        cities_menu
+                    fi
+                    ;;
+                "p2p")
+                    nordvpn connect p2p
+                    connect_menu
+                    ;;
+                "onion")
+                    nordvpn connect onion_over_vpn
+                    connect_menu
+                    ;;
+                *)
+                    ;;
+            esac
+            ;;
+        "disconnect")
+            nordvpn disconnect
+            nordvpn_menu
+            ;;
+        "status")
+            status_menu
+            ;;
+        "settings")
+            settings_menu
+            ;;
+        *)
+            ;;
+    esac
 }
 
 # main
-case "$(init_menu)" in
-    "connect")
-        case $(connect) in
-            "default")
-                nordvpn connect
-                ;;
-            "countries")
-                country="$(countries)"
-                [ -n "$country" ] && nordvpn connect "$country"
-                ;;
-            "cities")
-                country="$(countries)"
-                [ -n "$country" ] && city="$(cities "$country")"
-                [ -n "$city" ] && nordvpn connect "$country" "$city"
-                ;;
-            "p2p")
-                nordvpn connect p2p
-                ;;
-            "onion")
-                nordvpn connect onion_over_vpn
-                ;;
-            *)
-                ;;
-        esac
-        ;;
-    "disconnect")
-        disconnect
-        ;;
-    "status")
-        vpn_status
-        ;;
-    "settings")
-        settings
-        ;;
-    *)
-        ;;
-esac
+main
+
+# do not keep cache
+rm "/tmp/wofi-dump-cache"

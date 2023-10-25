@@ -17,39 +17,61 @@ echoexit() {
 # Checking dependencies:
 whereis checkupdates > /dev/null || echoexit "'checkupdates' not found."
 
-# TMP File for storing timestamp
+# temporary file for storing timestamp
 TMPDIR="/tmp"
-LASTRUN_FILE="$TMPDIR/waybar-module-checkupdates.lastrun"
+TMPFILE="$TMPDIR/waybar-module-checkupdates.lastrun"
 
-# calculate diff from last update
-touch "$LASTRUN_FILE"
-lastrun=$(cat "$LASTRUN_FILE")
-if [ "$lastrun" = "" ]; then
-  lastrun="0"
-fi
+# update checkupdates local database
+update_db() {
+  local lastrun_file preset lastrun thisrun elapsed
+  lastrun_file=$1
+  preset=$2
 
-now=$(date '+%s')
-diff=$(($now - $lastrun))
+  # create file if not exists
+  touch "$lastrun_file"
 
-# if diff > 5 min then update
-if [ $diff -gt 300 ]; then
-  checkupdates --nocolor
-  echo -e "$now" > "$LASTRUN_FILE"
-fi
+  # get timestamp of last run
+  lastrun=$(cat "$lastrun_file")
+  if [[ "$lastrun" == "" ]]; then
+    lastrun="0"
+  fi
 
-# Get current updates
-updates=$(checkupdates --nocolor --nosync)
+  # calculate elapsed time since last run
+  thisrun=$(date '+%s')
+  elapsed=$(($thisrun - $lastrun))
 
-# Check current updates
-if [[ $updates == *"->"* ]]; then
-  update_count=$(echo -e "$updates" | tr " " "\n" | grep -c "\->")
-  tooltip=$(echo -e "$updates" | sed "s/\"/\\\"/g" | sed "s/\n/\\n/g")
-  printf "%s" "{\"text\":\"$update_count\",\"tooltip\":\"$tooltip\",\"class\":\"has-updates\",\"alt\":\"has-updates\"}"
+  # update if elapsed time >= preset time
+  if (( $elapsed >= $preset )); then
+    checkupdates --nocolor
+    echo -e "$thisrun" > "$lastrun_file"
+  fi
+}
 
-elif [ "$updates" == "" ]; then
-  printf "%s" "{\"text\":\"0\",\"tooltip\":\"System updated\",\"class\":\"updated\",\"alt\":\"updated\"}"
+# checkupdates waybar module json format
+waybar_json() {
+  local updates
 
-else
-  printf "%s" "{\"text\":\"?\",\"tooltip\":\"Unknown response from checkupdates\",\"class\":\"unknown\",\"alt\":\"unknown\"}"
-fi
+  # get available updates
+  updates=$(checkupdates --nocolor --nosync)
 
+  # if updates found
+  if [[ $updates == *"->"* ]]; then
+    local update_count tooltip
+    update_count=$(echo -e "$updates" | tr " " "\n" | grep -c "\->")
+    tooltip=$(echo -e "$updates" | sed "s/\"/\\\"/g" | sed "s/\n/\\n/g")
+
+    printf %s "{\"text\":\"$update_count\",\"tooltip\":\"$tooltip\",\"class\":\"has-updates\",\"alt\":\"has-updates\"}"
+
+  # if updates not found
+  elif [[ "$updates" == "" ]]; then
+    printf %s "{\"text\":\"0\",\"tooltip\":\"System updated\",\"class\":\"updated\",\"alt\":\"updated\"}"
+
+  # if unknown response given
+  else
+    printf %s "{\"text\":\"?\",\"tooltip\":\"Unknown response from checkupdates\",\"class\":\"unknown\",\"alt\":\"unknown\"}"
+  fi
+}
+
+# main
+update_db $TMPFILE 300
+waybar_json
