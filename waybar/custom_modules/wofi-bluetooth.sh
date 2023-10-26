@@ -174,36 +174,9 @@ toggle_trust() {
     fi
 }
 
-# Prints a short string with the current bluetooth status
-# Useful for status bars like polybar, etc.
-print_status() {
-    if power_on; then
-        printf ''
-
-        mapfile -t paired_devices < <(bluetoothctl paired-devices | grep Device | cut -d ' ' -f 2)
-        counter=0
-
-        for device in "${paired_devices[@]}"; do
-            if device_connected $device; then
-                device_alias=$(bluetoothctl info $device | grep "Alias" | cut -d ' ' -f 2-)
-
-                if [ $counter -gt 0 ]; then
-                    printf ", %s" "$device_alias"
-                else
-                    printf " %s" "$device_alias"
-                fi
-
-                ((counter++))
-            fi
-        done
-        printf "\n"
-    else
-        echo ""
-    fi
-}
-
 # A submenu for a specific device that allows connecting, pairing, and trusting
 device_menu() {
+    local device
     device=$1
 
     # Get device name and mac address
@@ -225,19 +198,23 @@ device_menu() {
 
     # Match chosen option to command
     case $chosen in
-        "" | $divider)
-            echo "No option chosen."
+        "back")
+            bluetooth_menu
             ;;
         $connected)
             toggle_connection $mac
+            device_menu "$device"
             ;;
         $paired)
             toggle_paired $mac
+            device_menu "$device"
             ;;
         $trusted)
             toggle_trust $mac
+            device_menu "$device"
             ;;
         *)
+            device_menu "$device"
             ;;
     esac
 }
@@ -252,7 +229,7 @@ bluetooth_menu() {
         # Human-readable names of devices, one per line
         # If scan is off, will only list paired devices
         full_devices=$(bluetoothctl devices)
-        devices=$(printf %s "$full_devices" | grep Device | cut -d ' ' -f 3-)
+        devices=$(printf %s "$full_devices" | grep "Device" | cut -d ' ' -f 3-)
 
         # Get controller flags
         scan=$(scan_on)
@@ -260,7 +237,7 @@ bluetooth_menu() {
         discoverable=$(discoverable_on)
 
         # Options passed to wofi
-        options="$devices\n$divider\n$power\n$scan\n$pairable\n$discoverable"
+        options="$devices\n$divider\n$power\n$scan\n$pairable\n$discoverable\nexit"
         
         width="200"
         height="240"
@@ -293,8 +270,7 @@ bluetooth_menu() {
             toggle_pairable
             bluetooth_menu
             ;;
-        "" | $divider)
-            bluetooth_menu
+        "exit")
             ;;
         *)
             local device

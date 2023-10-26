@@ -197,6 +197,54 @@ function selection_action() {
 	esac
 }
 
+# opens a wofi menu with current network status and options to connect
+device_menu() {
+	local options actions chosen
+
+	# get menu options
+	options="$(device_menu_options "$1")"
+
+	# separate options and actions
+	actions=()
+	IFS=$'\n' read -rd '' -a actions <<< ${options##*&}
+	options=${options%&*}
+
+	# launch wofi and choose option
+	chosen="$(echo -e "$options" | $wofi_command -p "Network" --width=280 --height=300)"
+
+	# match chosen option to command
+	case $chosen in
+	 	"turn on")
+	        nmcli networking on
+			network_menu
+	        ;;
+	    "turn off")
+	        nmcli networking off
+			network_menu
+	        ;;
+	    "open connection editor")
+	        nm-connection-editor
+			network_menu
+	        ;;
+		"" | $divider)
+            network_menu
+            ;;
+	    *)
+			local device
+			for i in "${actions[@]}"; do
+				if [[ "$chosen" == "$i" ]]; then
+					device="$chosen"
+				fi
+			done
+			if [[ $device ]]: then
+				device_menu "$device"
+			else
+				network_menu
+			fi
+	        ;;
+	esac
+}
+
 # nwtwork menu options
 network_menu_options() {
 	local choices actions networking_active device_status devices
@@ -285,22 +333,18 @@ network_menu() {
             network_menu
             ;;
 	    *)
-			for i in "${init_actions[@]}"; do
-				if [[ "$init_choice" == "$i" ]]; then
-
-					# get menu choices
-					device_choices="$(device_menu_choices "$init_choice")"
-
-					# get action array
-					device_actions=()
-					IFS=$'\n' read -rd '' -a device_actions <<< ${device_choices##*&}
-
-					# launch wofi and choose action
-					device_choices=${device_choices%&*}
-					device_choice="$(echo -e "$device_choices" | $wofi_command -p "$init_choice" --width=300 --height=300)"
+			local device
+			for i in "${actions[@]}"; do
+				if [[ "$chosen" == "$i" ]]; then
+					device="$chosen"
 				fi
 			done
-	        ;;
+			if [[ $device ]]: then
+				device_menu "$device"
+			else
+				network_menu
+			fi
+			;;
 	esac
 }
 
