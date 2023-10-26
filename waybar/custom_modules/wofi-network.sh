@@ -223,35 +223,51 @@ interface_menu() {
 	interface_state=$(get_show_property "GENERAL.STATE:")
 	
 	# get menu options
-	options="interface: $interface_name"
-	options="$options\ntype: $interface_type"
-	options="$options\nMAC: $interface_mac"
-	options="$options\nstate: $interface_state"
+	options="$interface_name:"
+	options="$options\n\ttype: $interface_type"
+	options="$options\n\tMAC: $interface_mac"
+	options="$options\n\tstate: $interface_state"
 	
 	# get connected options
 	if [[ "$interface_state" == *"connected"* ]]; then
 		local interface_connection interface_ip interface_gateway
 		interface_connection=$(get_show_property "GENERAL.CONNECTION:")
-		interface_ip=$(get_show_property "IP4.ADDRESS\[1\]:")
-		interface_gateway=$(get_show_property "IP4.GATEWAY:")
 
 		options="$options\nconnection: $interface_connection"
-		options="$options\nIP: $interface_ip"
-		options="$options\ngateway: $interface_gateway"
-		options="$options\n$DIVIDER"
 		options="$options\ndisconnect"
 	else
-		options="$options\n$DIVIDER"
 		options="$options\nconnect"
 	fi
 
-	# get local wifi list
-	wifi_list=$(nmcli device wifi list ifname "$interface" --rescan no)
+	# get wifi options
+	if [[ "$interface_type" == *"wifi"* ]]; then
+		local radio_state
+		radio_state=$(nmcli radio wifi)
+
+		if [[ "$radio_state" == *"enabled"* ]]; then
+			local wifi_list
+
+			options="$options\nturn off\nscan"
+			
+			# get local wifi list
+			options="$options\nwifi list:"
+			wifi_list=$(nmcli device wifi list ifname "$interface" --rescan no)
+			options="$options\n$wifi_list"
+		else
+			options="$options\nturn on"
+		fi
+
+		if [[ "$interface_state" == *"connected"* ]]; then
+			options="$options\nshow password"
+		fi
+	fi
+
+	
 
 	options="$options\nback"
 
 	# launch wofi and select option
-	selected="$(echo -e "$options" | $MENU_CMD -p "$interface" --width=280 --height=300)"
+	selected="$(printf %b "$options" | $MENU_CMD -p "$interface" --width=280 --height=300)"
 	
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -271,11 +287,11 @@ interface_menu() {
 			nmcli device disconnect "$interface"
 			interface_menu "$interface"
 			;;
-		"wifi [off]")
+		"turn on")
 			nmcli radio wifi on
 			interface_menu "$interface"
 			;;
-		"wifi [on]")
+		"turn off")
 			nmcli radio wifi off
 			interface_menu "$interface"
 			;;
@@ -306,17 +322,18 @@ interface_menu() {
 network_menu() {
 	local options selected interfaces networking_state 
 
-	interfaces=()
 	networking_state=$(nmcli networking)
 	
 	if [[ "$networking_state" == "enabled" ]]; then
-		local interfaces_full interfaces_status
+		local interfaces_array interfaces_status
 
-		interfaces_full=()
+		interfaces_array=()
 		interfaces_status=$(nmcli device status)
-		IFS=$'\n' read -rd '' -a interfaces_full <<< "$interfaces_status"
+		IFS=$'\n' read -rd '' -a interfaces_array <<< "$interfaces_status"
 
-		for i in "${interfaces_full[@]}"; do
+		options="$options\ninterfaces:"
+
+		for i in "${interfaces_array[@]}"; do
 			local interface_name interface_type interface_state interface_connection
 
 			interface_name=$(printf %b "$i" | awk '{print $1}')
@@ -329,20 +346,19 @@ network_menu() {
 			fi
 
 			local sp ss ep es
-			sp=${interfaces_full[0]%%"STATE"*}
+			sp=${interfaces_array[0]%%"STATE"*}
 			ss=${#sp}
-			ep=${interfaces_full[0]%%"CONNECTION"*}
+			ep=${interfaces_array[0]%%"CONNECTION"*}
 			es=${#ep}
 			interface_state=${i:ss:((es - ss))}
 			interface_state="$(trim_whitespaces "$interface_state")"
 
 			interface_connection=$(printf %b "$i" | sed "s/$interface_state/\:/g" | cut -d ":" -f 2 | trim_whitespaces)
 
-			options="$options\n$interface_name: [$interface_type] $interface_connection"
-			interfaces+=("$interface_name: [$interface_type] $interface_connection")
+			options="$options\n\t$interface_name: [$interface_type] $interface_connection"
+			interfaces="$interfaces\n$interface_name"
 		done
-
-		options="$options\n$DIVIDER"
+	
 		options="$options\nturn off"
 	else
 		options="${options}\nturn on"
@@ -376,13 +392,9 @@ network_menu() {
 			network_menu
 	        ;;
 	    *)
-			local interface
-			for i in "${interfaces[@]}"; do
-				if [[ "$selected" == "$i" ]]; then
-					interface=$(printf %b "$selected" | cut -d ":" -f 1)
-					printf %b "$interface"
-				fi
-			done
+			local interface interface_selected
+			interface_selected=$(printf %b "$selected" | cut -d ":" -f 1 | trim_whitespaces)
+			interface=$(printf %b "$interfaces" | grep "$interface_selected" -m 1)
 			if [[ "$interface" == "" ]]; then
 				network_menu
 			else
@@ -391,11 +403,6 @@ network_menu() {
 			;;
 	esac
 }
-
-teste="$(trim_whitespaces "   woopsie    ")"
-echo "$teste"
-teste=$(printf %s "     eelo  " | trim_whitespaces)
-echo "$teste"
 
 # main 
 network_menu
