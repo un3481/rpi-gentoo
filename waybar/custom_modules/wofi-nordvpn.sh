@@ -32,6 +32,8 @@ status_menu() {
 
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             nordvpn_menu
             ;;
@@ -52,6 +54,8 @@ settings_menu() {
 
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             nordvpn_menu
             ;;
@@ -72,14 +76,13 @@ countries_menu() {
     
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             connect_menu
             ;;
         "default")
             nordvpn connect
-            countries_menu
-            ;;
-        "")
             countries_menu
             ;;
         *)
@@ -101,14 +104,13 @@ cities_menu() {
 
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             countries_cities_menu
             ;;
         "default")
             nordvpn connect "$country"
-            cities_menu "$country"
-            ;;
-        "")
             cities_menu "$country"
             ;;
         *)
@@ -129,11 +131,10 @@ countries_cities_menu() {
     
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             connect_menu
-            ;;
-        "")
-            countries_cities_menu
             ;;
         *)
             cities_menu "$selected"
@@ -151,6 +152,8 @@ connect_menu() {
 
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "back")
             nordvpn_menu
             ;;
@@ -188,6 +191,8 @@ nordvpn_menu() {
 
     # match selected option to command
     case $selected in
+        "")
+            ;;
         "exit")
             ;;
         "connect")

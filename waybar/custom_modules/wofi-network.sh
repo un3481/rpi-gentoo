@@ -199,7 +199,8 @@ function selection_action() {
 
 # opens a wofi menu with current network status and options to connect
 device_menu() {
-	local options actions chosen
+	local device options actions chosen
+	device=$1
 
 	# get menu options
 	options="$(device_menu_options "$1")"
@@ -216,61 +217,52 @@ device_menu() {
 	case $chosen in
 	 	"turn on")
 	        nmcli networking on
-			network_menu
+			device_menu "$device"
 	        ;;
 	    "turn off")
 	        nmcli networking off
-			network_menu
+			device_menu "$device"
 	        ;;
 	    "open connection editor")
 	        nm-connection-editor
-			network_menu
+			device_menu "$device"
 	        ;;
 		"" | $divider)
-            network_menu
+            device_menu "$device"
             ;;
 	    *)
-			local device
+			local connection
 			for i in "${actions[@]}"; do
-				if [[ "$chosen" == "$i" ]]; then
-					device="$chosen"
+				if [[ "$selected" == "$i" ]]; then
+					connection="$selected"
 				fi
 			done
-			if [[ $device ]]: then
+			if [[ "$device" == "" ]]; then
 				device_menu "$device"
 			else
-				network_menu
+				connection_menu "$device" "$connection"
 			fi
 	        ;;
 	esac
 }
 
-# nwtwork menu options
-network_menu_options() {
-	local choices actions networking_active device_status devices
+# opens a wofi menu with current network status and options to connect
+network_menu() {
+	local options networking_state devices actions selected
 
-	if [[ "$(nmcli networking)" == "enabled" ]]; then
+	networking_state=$(nmcli networking)
+	if [[ "$networking_state" == "enabled" ]]; then
+		local device_status devices_full
 
 		device_status=$(nmcli device status)
-		devices=()
-		IFS=$'\n' read -rd '' -a devices <<< "$device_status"
+		devices_full=()
+		IFS=$'\n' read -rd '' -a devices_full <<< "$device_status"
 
-		for i in "${devices[@]}"; do
+		for i in "${devices_full[@]}"; do
 			local device_name device_type device_state device_connection
 
-			device_name=$(echo -e "$i" | awk '{print $1}')
-			device_type=$(echo -e "$i" | awk '{print $2}')
-
-			local sp ss ep es
-			sp=${devices[0]%%"STATE"*}
-			ss=${#sp}
-			ep=${devices[0]%%"CONNECTION"*}
-			es=${#ep}
-			device_state=${i:ss:((es - ss))}
-			device_state="${device_state#"${device_state%%[![:space:]]*}"}"
-
-			device_connection=$(echo -e "$i" | sed "s/$device_state/\:/g" | cut -d ":" -f 2)
-			device_connection="${device_connection#"${device_connection%%[![:space:]]*}"}"
+			device_name=$(printf %b "$i" | awk '{print $1}')
+			device_type=$(printf %b "$i" | awk '{print $2}')
 
 			if	[[ "$device_type" == "TYPE"     ]] || \
 				[[ "$device_type" == "loopback" ]] || \
@@ -278,45 +270,49 @@ network_menu_options() {
 				continue
 			fi
 
-			choices="$choices$device_name [$device_type]:\n"
-			actions="$actions$device_name [$device_type]:\n"
+			local sp ss ep es
+			sp=${devices_full[0]%%"STATE"*}
+			ss=${#sp}
+			ep=${devices_full[0]%%"CONNECTION"*}
+			es=${#ep}
+			device_state=${i:ss:((es - ss))}
+			device_state="${device_state#"${device_state%%[![:space:]]*}"}"
 
-			choices="$choices\tstate: $device_state\n"
+			device_connection=$(printf %b "$i" | sed "s/$device_state/\:/g" | cut -d ":" -f 2)
+			device_connection="${device_connection#"${device_connection%%[![:space:]]*}"}"
+
+			actions="$actions$device_name [$device_type]:\n"
+			options="$options$device_name [$device_type]:\n"
+			options="$options\tstate: $device_state\n"
 
 			if [[ "$device_connection" == *"--"* ]]; then
 				continue
 			fi
 
-			choices="$choices\tconnection: $device_connection\n"
+			options="$options\tconnection: $device_connection\n"
 		done
 
-		choices="${choices}turn off\n"
+		options="${options}turn off\n"
 	else
-		choices="${choices}turn on\n"
+		options="${options}turn on\n"
 	fi
 
-	choices="${choices}open connection editor"
-	
-	printf "%b" "$choices&$actions"
-}
-
-# opens a wofi menu with current network status and options to connect
-network_menu() {
-	local options actions chosen
-
-	# get menu options
-	options="$(network_menu_options)"
+	options="${options}open connection editor\nexit"
 
 	# separate options and actions
 	actions=()
-	IFS=$'\n' read -rd '' -a actions <<< ${options##*&}
+	IFS=$'\n' read -rd '' -a actions <<< ${actions##*&}
 	options=${options%&*}
 
 	# launch wofi and choose option
-	chosen="$(echo -e "$options" | $wofi_command -p "Network" --width=280 --height=300)"
+	selected="$(printf %b "$options" | $wofi_command -p "Network" --width=280 --height=300)"
 
 	# match chosen option to command
-	case $chosen in
+	case $selected in
+		"")
+            ;;
+		"exit")
+	        ;;
 	 	"turn on")
 	        nmcli networking on
 			network_menu
@@ -329,20 +325,17 @@ network_menu() {
 	        nm-connection-editor
 			network_menu
 	        ;;
-		"" | $divider)
-            network_menu
-            ;;
 	    *)
 			local device
 			for i in "${actions[@]}"; do
-				if [[ "$chosen" == "$i" ]]; then
-					device="$chosen"
+				if [[ "$selected" == "$i" ]]; then
+					device="$selected"
 				fi
 			done
-			if [[ $device ]]: then
-				device_menu "$device"
-			else
+			if [[ "$device" == "" ]]; then
 				network_menu
+			else
+				device_menu "$device"
 			fi
 			;;
 	esac
