@@ -25,6 +25,7 @@ TMPDIR="/tmp"
 CACHE_FILE="$TMPDIR/wofi-dump-cache"
 QRCODE_FILE="$TMPDIR/wofi-network-qrcode"
 
+DIVIDER="---------------------------------"
 PASSWORD_ENTER="Enter password. Press Return/ESC if connection is stored."
 
 # menu command, should read from stdin and write to stdout.
@@ -160,34 +161,94 @@ show_password_menu() {
 	esac
 }
 
-connection_menu() {
+trim_whitespaces() {
+	local text
+	text=$1
+	if [[ "$text" == "" ]]; then
+		read text
+	fi
+	text="${text#"${text%%[![:space:]]*}"}"
+	printf %s "$text"
+}
 
+get_show_property() {
+	local property
+	property=$(printf %b "$interface_info" | grep "$1" -m 1 | sed "s/$1//g" | trim_whitespaces)
+	printf %s "$property"
+}
+
+connection_menu() {
+	local options selected interface connection connection_info
+	interface=$1
+	connection=$2
+
+	connection_info=$(nmcli connection show "$connection")
+
+	# match selected option to command
+	case $selected in
+		"")
+            ;;
+		"back")
+			interface_menu "$interface"
+	        ;;
+		"connect")
+			nmcli connection up id "$connection"
+			connection_menu "$interface" "$connection"
+			;;
+		"disconnect")
+			nmcli connection down id "$connection"
+			connection_menu "$interface" "$connection"
+			;;
+		"show password")
+			show_password_menu "$interface"
+			;;
+	    *)
+			connection_menu "$interface" "$connection"
+	        ;;
+	esac
 }
 
 # opens a wofi menu with current interface status and options to connect
 interface_menu() {
-	local options selected interface interface_info interface_name interface_type connections
+	local options selected interface interface_info connections
 	interface=$1
 
 	# get interface info
 	interface_info=$(nmcli device show "$interface")
 
-	interface_name=$(printf %b "$interface_info" | grep "GENERAL.DEVICE:" -m 1 | sed "s/GENERAL.DEVICE://g")
-	interface_name="${interface_name#"${interface_name%%[![:space:]]*}"}"
+	local interface_name interface_type interface_mac interface_state
+	interface_name=$(get_show_property "GENERAL.DEVICE:")
+	interface_type=$(get_show_property "GENERAL.TYPE:")
+	interface_mac=$(get_show_property "GENERAL.HWADDR:")
+	interface_state=$(get_show_property "GENERAL.STATE:")
+	
+	# get menu options
+	options="interface: $interface_name"
+	options="$options\ntype: $interface_type"
+	options="$options\nMAC: $interface_mac"
+	options="$options\nstate: $interface_state"
+	
+	# get connected options
+	if [[ "$interface_state" == *"connected"* ]]; then
+		local interface_connection interface_ip interface_gateway
+		interface_connection=$(get_show_property "GENERAL.CONNECTION:")
+		interface_ip=$(get_show_property "IP4.ADDRESS\[1\]:")
+		interface_gateway=$(get_show_property "IP4.GATEWAY:")
 
-	interface_type=$(printf %b "$interface_info" | grep "GENERAL.TYPE:" -m 1 | sed "s/GENERAL.TYPE://g")
-	interface_type="${interface_type#"${interface_type%%[![:space:]]*}"}"
+		options="$options\nconnection: $interface_connection"
+		options="$options\nIP: $interface_ip"
+		options="$options\ngateway: $interface_gateway"
+		options="$options\n$DIVIDER"
+		options="$options\ndisconnect"
+	else
+		options="$options\n$DIVIDER"
+		options="$options\nconnect"
+	fi
 
 	# get local wifi list
 	wifi_list=$(nmcli device wifi list ifname "$interface" --rescan no)
 
-	# get menu options
-	options=""
-
-	# separate options and actions
-	connections=()
-	IFS=$'\n' read -rd '' -a connections <<< ${options##*&}
-	options=${options%&*}
+	options="$options\nback"
 
 	# launch wofi and select option
 	selected="$(echo -e "$options" | $MENU_CMD -p "$interface" --width=280 --height=300)"
@@ -216,10 +277,6 @@ interface_menu() {
 			;;
 		"wifi [on]")
 			nmcli radio wifi off
-			interface_menu "$interface"
-			;;
-		"disconnect")
-			nmcli connection down id "$active_ssid"
 			interface_menu "$interface"
 			;;
 		"scan")
@@ -277,21 +334,22 @@ network_menu() {
 			ep=${interfaces_full[0]%%"CONNECTION"*}
 			es=${#ep}
 			interface_state=${i:ss:((es - ss))}
-			interface_state="${interface_state#"${interface_state%%[![:space:]]*}"}"
+			interface_state="$(trim_whitespaces "$interface_state")"
 
-			interface_connection=$(printf %b "$i" | sed "s/$interface_state/\:/g" | cut -d ":" -f 2)
-			interface_connection="${interface_connection#"${interface_connection%%[![:space:]]*}"}"
+			interface_connection=$(printf %b "$i" | sed "s/$interface_state/\:/g" | cut -d ":" -f 2 | trim_whitespaces)
 
-			options="$options$interface_name: [$interface_type] $interface_connection\n"
+			options="$options\n$interface_name: [$interface_type] $interface_connection"
 			interfaces+=("$interface_name: [$interface_type] $interface_connection")
 		done
 
-		options="${options}turn off\n"
+		options="$options\n$DIVIDER"
+		options="$options\nturn off"
 	else
-		options="${options}turn on\n"
+		options="${options}\nturn on"
 	fi
 
-	options="${options}open connection editor\nexit"
+	options="$options\nopen connection editor\nexit"
+	options="${options:2}"
 
 	# launch wofi and select option
 	selected="$(printf %b "$options" | $MENU_CMD -p "Network" --width=280 --height=260)"
@@ -333,6 +391,11 @@ network_menu() {
 			;;
 	esac
 }
+
+teste="$(trim_whitespaces "   woopsie    ")"
+echo "$teste"
+teste=$(printf %s "     eelo  " | trim_whitespaces)
+echo "$teste"
 
 # main 
 network_menu
