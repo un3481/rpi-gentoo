@@ -19,19 +19,19 @@ whereis checkupdates > /dev/null || echoexit "'checkupdates' not found."
 
 # temporary file for storing timestamp
 TMPDIR="/tmp"
-TMPFILE="$TMPDIR/waybar-module-checkupdates.lastrun"
+LASTRUN_FILE="$TMPDIR/waybar-module-checkupdates.lastrun"
 
 # update checkupdates local database
-update_db() {
+check_outdated() {
   local lastrun_file preset lastrun thisrun elapsed
-  lastrun_file=$1
+  lrun_file=$1
   preset=$2
 
   # create file if not exists
-  touch "$lastrun_file"
+  touch "$lrun_file"
 
   # get timestamp of last run
-  lastrun=$(cat "$lastrun_file")
+  lastrun=$(cat "$lrun_file")
   if [[ "$lastrun" == "" ]]; then
     lastrun="0"
   fi
@@ -40,30 +40,39 @@ update_db() {
   thisrun=$(date '+%s')
   elapsed=$(($thisrun - $lastrun))
 
-  # update if elapsed time >= preset time
+  # write to lastrun file
+  echo -e "$thisrun" > "$lrun_file"
+
+  # return elapsed time >= preset time
   if (( $elapsed >= $preset )); then
-    checkupdates --nocolor
-    echo -e "$thisrun" > "$lastrun_file"
+    printf %s "1"
+  else
+    printf %s "0"
   fi
 }
 
 # checkupdates waybar module json format
 waybar_json() {
-  local updates
+  local updates updates_array update_count
 
   # get available updates
   updates=$(checkupdates --nocolor --nosync)
+  updates_array=()
+  IFS=$'\n' read -rd '' -a updates_array <<< "$updates"
+  update_count=${#updates_array[@]}
 
   # if updates found
-  if [[ $updates == *"->"* ]]; then
-    local update_count tooltip
-    update_count=$(echo -e "$updates" | tr " " "\n" | grep -c "\->")
-    tooltip=$(echo -e "$updates" | sed "s/\"/\\\"/g" | sed "s/\n/\\n/g")
+  if (( $update_count > 0 )); then
+    for i in "${updates_array[@]}"; do
+      tooltip="$tooltip\n$i"
+    done
+    tooltip=$(printf %s "$tooltip" | sed "s/\"/\\\"/g" | sed "s/\n/\\n/g")
+    tooltip="${tooltip:2}"
 
     printf %s "{\"text\":\"$update_count\",\"tooltip\":\"$tooltip\",\"class\":\"has-updates\",\"alt\":\"has-updates\"}"
 
   # if updates not found
-  elif [[ "$updates" == "" ]]; then
+  elif (( $update_count == 0 )); then
     printf %s "{\"text\":\"0\",\"tooltip\":\"System updated\",\"class\":\"updated\",\"alt\":\"updated\"}"
 
   # if unknown response given
@@ -73,5 +82,8 @@ waybar_json() {
 }
 
 # main
-update_db $TMPFILE 300
+outdated=$(check_outdated $LASTRUN_FILE 300)
+if (( $outdated )); then
+  $(checkupdates --nocolor &)
+fi
 waybar_json

@@ -20,12 +20,15 @@ whereis nmcli > /dev/null || echoexit "'nmcli' not found."
 whereis qrencode > /dev/null || echoexit "'qrencode' not found."
 whereis nm-connection-editor > /dev/null || echoexit "'nm-connection-editor' not found."
 
-# Default Values
+# constants
 TMPDIR="/tmp"
+CACHE_FILE="$TMPDIR/wofi-dump-cache"
+QRCODE_FILE="$TMPDIR/wofi-network-qrcode"
+
 PASSWORD_ENTER="Enter password. Press Return/ESC if connection is stored."
 
 # menu command, should read from stdin and write to stdout.
-MENU_CMD="wofi --dmenu --location=3 --x=-180 --cache-file=/tmp/wofi-dump-cache"
+MENU_CMD="wofi --dmenu --location=3 --x=-180 --cache-file=$CACHE_FILE"
 
 # available options
 available_options() {
@@ -44,7 +47,7 @@ check_wifi_connected() {
 
 connect() {
 	check_wifi_connected
-	{ [[ $(nmcli dev wifi con "$1" password "$2" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
+	{ [[ $(nmcli device wifi con "$1" password "$2" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
 }
 
 enter_passwword() {
@@ -57,7 +60,7 @@ enter_ssid() {
 
 stored_connection() {
 	check_wifi_connected
-	{ [[ $(nmcli dev wifi con "$1" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
+	{ [[ $(nmcli device wifi con "$1" ifname "${IWIRELESS}" | grep -c "successfully activated") -eq "1" ]]; }
 }
 
 ssid_manual() {
@@ -73,9 +76,9 @@ ssid_hidden() {
 	[[ -n $SSID ]] && {
 		enter_passwword && check_wifi_connected
 		[[ -n "$PASS" ]] && [[ "$PASS" != "$PASSWORD_ENTER" ]] && {
-			nmcli con add type wifi con-name "$SSID" ssid "$SSID" ifname "${IWIRELESS}"
-			nmcli con modify "$SSID" wifi-sec.key-mgmt wpa-psk
-			nmcli con modify "$SSID" wifi-sec.psk "$PASS"
+			nmcli connection add type wifi con-name "$SSID" ssid "$SSID" ifname "${IWIRELESS}"
+			nmcli connection modify "$SSID" wifi-sec.key-mgmt wpa-psk
+			nmcli connection modify "$SSID" wifi-sec.psk "$PASS"
 		} || [[ $(nmcli -g NAME con show | grep -c "$SSID") -eq "0" ]] && nmcli con add type wifi con-name "$SSID" ssid "$SSID" ifname "${IWIRELESS}"
 		{ [[ $(nmcli con up id "$SSID" | grep -c "successfully activated") -eq "1" ]]; }
 	}
@@ -95,7 +98,8 @@ qrencode_menu() {
 	security=$3
 	password=$4
 
-	image_file="$TMPDIR/wofi-network-qrcode-$ssid.png"
+	# set qrcode parameters
+	image_file="$QRCODE_FILE-$interface.png"
 	text="WIFI:S:$ssid;T:$security;P:$password;;"
 	menu_style="
 		entry {
@@ -114,11 +118,11 @@ qrencode_menu() {
 	# generate qrcode image in tmp folder
 	qrencode -t png -o "$image_file" -l H -s 25 -m 2 --dpi=192 "$text"
 
-	# launch wofi and choose option
+	# launch wofi and select option
 	selected="$(printf %b "" | $MENU_CMD -p "$ssid" --width=280 --height=260 --style="$menu_style")"
 
 	# do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm "$CACHE_FILE"
 
 	show_password_menu "$interface"
 }
@@ -134,15 +138,15 @@ show_password_menu() {
 	
 	options="SSID: $ssid\nsecurity: $security\npassword: $password\nqrcode\nback"
 
-	# launch wofi and choose option
+	# launch wofi and select option
 	selected="$(printf %b "$options" | $MENU_CMD -p "$ssid" --width=280 --height=260)"
 
 	# do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm "$CACHE_FILE"
 
 	# match selected option to command
 	case $selected in
-		"" )
+		"")
             ;;
 		"back")
 			interface_menu "$interface"
@@ -156,13 +160,23 @@ show_password_menu() {
 	esac
 }
 
+connection_menu() {
+
+}
+
 # opens a wofi menu with current interface status and options to connect
 interface_menu() {
-	local options selected actions interface interface_info
+	local options selected interface interface_info interface_name interface_type connections
 	interface=$1
 
 	# get interface info
 	interface_info=$(nmcli device show "$interface")
+
+	interface_name=$(printf %b "$interface_info" | grep "GENERAL.DEVICE:" -m 1 | sed "s/GENERAL.DEVICE://g")
+	interface_name="${interface_name#"${interface_name%%[![:space:]]*}"}"
+
+	interface_type=$(printf %b "$interface_info" | grep "GENERAL.TYPE:" -m 1 | sed "s/GENERAL.TYPE://g")
+	interface_type="${interface_type#"${interface_type%%[![:space:]]*}"}"
 
 	# get local wifi list
 	wifi_list=$(nmcli device wifi list ifname "$interface" --rescan no)
@@ -171,15 +185,15 @@ interface_menu() {
 	options=""
 
 	# separate options and actions
-	actions=()
-	IFS=$'\n' read -rd '' -a actions <<< ${options##*&}
+	connections=()
+	IFS=$'\n' read -rd '' -a connections <<< ${options##*&}
 	options=${options%&*}
 
-	# launch wofi and choose option
+	# launch wofi and select option
 	selected="$(echo -e "$options" | $MENU_CMD -p "$interface" --width=280 --height=300)"
 	
 	# do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm "$CACHE_FILE"
 
 	# match selected option to command
 	case $selected in
@@ -188,19 +202,19 @@ interface_menu() {
 		"back")
 			network_menu
 	        ;;
-	 	"enable")
+	 	"connect")
 			nmcli device connect "$interface"
 			interface_menu "$interface"
 			;;
-		"disable")
+		"disconnect")
 			nmcli device disconnect "$interface"
 			interface_menu "$interface"
 			;;
-		"turn wifi on")
+		"wifi [off]")
 			nmcli radio wifi on
 			interface_menu "$interface"
 			;;
-		"turn wifi off")
+		"wifi [on]")
 			nmcli radio wifi off
 			interface_menu "$interface"
 			;;
@@ -217,15 +231,15 @@ interface_menu() {
 			;;
 	    *)
 			local connection
-			for i in "${actions[@]}"; do
+			for i in "${connections[@]}"; do
 				if [[ "$selected" == "$i" ]]; then
 					connection="$selected"
 				fi
 			done
-			if [[ "$device" == "" ]]; then
+			if [[ "$connection" == "" ]]; then
 				interface_menu "$interface"
 			else
-				connection_menu "$device" "$connection"
+				connection_menu "$interface" "$connection"
 			fi
 	        ;;
 	esac
@@ -279,11 +293,11 @@ network_menu() {
 
 	options="${options}open connection editor\nexit"
 
-	# launch wofi and choose option
+	# launch wofi and select option
 	selected="$(printf %b "$options" | $MENU_CMD -p "Network" --width=280 --height=260)"
 
 	# do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm "$CACHE_FILE"
 
 	# match selected option to command
 	case $selected in
