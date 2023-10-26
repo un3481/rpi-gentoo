@@ -31,6 +31,26 @@ PASSWORD_ENTER="Enter password. Press Return/ESC if connection is stored."
 # menu command, should read from stdin and write to stdout.
 MENU_CMD="wofi --dmenu --location=3 --x=-180 --cache-file=$CACHE_FILE"
 
+trim_whitespaces() {
+	local text
+	text=$1
+	if [[ "$text" == "" ]]; then
+		read text
+	fi
+	text="${text#"${text%%[![:space:]]*}"}"
+	printf %s "$text"
+}
+
+get_show_property() {
+	local property
+	property=$(printf %b "$interface_info" | grep "$1" -m 1 | sed "s/$1//g" | trim_whitespaces)
+	printf %s "$property"
+}
+
+get_list_property() {
+	
+}
+
 # available options
 available_options() {
 	case "$SELECTION" in
@@ -159,22 +179,6 @@ show_password_menu() {
 			show_password_menu "$interface"
 	        ;;
 	esac
-}
-
-trim_whitespaces() {
-	local text
-	text=$1
-	if [[ "$text" == "" ]]; then
-		read text
-	fi
-	text="${text#"${text%%[![:space:]]*}"}"
-	printf %s "$text"
-}
-
-get_show_property() {
-	local property
-	property=$(printf %b "$interface_info" | grep "$1" -m 1 | sed "s/$1//g" | trim_whitespaces)
-	printf %s "$property"
 }
 
 connection_menu() {
