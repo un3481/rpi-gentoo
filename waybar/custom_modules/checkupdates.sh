@@ -24,14 +24,14 @@ LASTRUN_FILE="$TMPDIR/waybar-module-checkupdates.lastrun"
 # update checkupdates local database
 check_outdated() {
   local lastrun_file preset lastrun thisrun elapsed
-  lrun_file=$1
+  lastrun_file=$1
   preset=$2
 
   # create file if not exists
-  touch "$lrun_file"
+  touch "$lastrun_file"
 
   # get timestamp of last run
-  lastrun=$(cat "$lrun_file")
+  lastrun=$(cat "$lastrun_file")
   if [[ "$lastrun" == "" ]]; then
     lastrun="0"
   fi
@@ -41,7 +41,7 @@ check_outdated() {
   elapsed=$(($thisrun - $lastrun))
 
   # write to lastrun file
-  echo -e "$thisrun" > "$lrun_file"
+  echo -e "$thisrun" > "$lastrun_file"
 
   # return elapsed time >= preset time
   if (( $elapsed >= $preset )); then

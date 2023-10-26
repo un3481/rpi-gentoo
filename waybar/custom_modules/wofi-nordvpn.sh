@@ -18,8 +18,12 @@ echoexit() {
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 
+# constants
+TMPDIR="/tmp"
+CACHE_FILE="$TMPDIR/wofi-dump-cache"
+
 # menu command, should read from stdin and write to stdout
-wofi_command="wofi --dmenu --location=3 --cache-file=/tmp/wofi-dump-cache"
+MENU_CMD="wofi --dmenu --location=3 --cache-file=/tmp/wofi-dump-cache"
 
 # Show vpn status.
 status_menu() {
@@ -28,10 +32,10 @@ status_menu() {
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Status" --x=-320 --width="260" --height="240")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Status" --x=-320 --width="260" --height="240")
 
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -53,10 +57,10 @@ settings_menu() {
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Settings" --x=-320 --width="260" --height="240")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Settings" --x=-320 --width="260" --height="240")
 
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -78,10 +82,10 @@ countries_menu() {
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Countries" --x=-320 --width="200" --height="200")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width="200" --height="200")
     
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -109,10 +113,10 @@ cities_menu() {
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Cities" --x=-320 --width="180" --height="200")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Cities" --x=-320 --width="180" --height="200")
 
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -139,10 +143,10 @@ countries_cities_menu() {
     options="back\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Countries" --x=-320 --width="200" --height="200")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width="200" --height="200")
     
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -163,10 +167,10 @@ connect_menu() {
     options="default\ncountries\ncities\np2p\nonion\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Connect" --x=-320 --width="140" --height="260")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Connect" --x=-320 --width="140" --height="260")
 
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
@@ -205,10 +209,10 @@ nordvpn_menu() {
     options="connect\ndisconnect\nstatus\nsettings\nexit"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $wofi_command -p "Nordvpn" --x=-320 --width="140" --height="230")
+    selected=$(printf %b "$options" | $MENU_CMD -p "Nordvpn" --x=-320 --width="140" --height="230")
 
     # do not keep cache
-	rm "/tmp/wofi-dump-cache"
+	rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
