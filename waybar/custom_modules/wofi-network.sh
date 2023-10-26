@@ -199,7 +199,7 @@ function selection_action() {
 
 # opens a wofi menu with current network status and options to connect
 device_menu() {
-	local device options actions chosen
+	local device options actions selected
 	device=$1
 
 	# get menu options
@@ -211,10 +211,18 @@ device_menu() {
 	options=${options%&*}
 
 	# launch wofi and choose option
-	chosen="$(echo -e "$options" | $wofi_command -p "Network" --width=280 --height=300)"
+	selected="$(echo -e "$options" | $wofi_command -p "$device" --width=280 --height=300)"
+	
+	# do not keep cache
+	rm "/tmp/wofi-dump-cache"
 
 	# match chosen option to command
-	case $chosen in
+	case $selected in
+		"" )
+            ;;
+		"back")
+			network_menu
+	        ;;
 	 	"turn on")
 	        nmcli networking on
 			device_menu "$device"
@@ -227,9 +235,6 @@ device_menu() {
 	        nm-connection-editor
 			device_menu "$device"
 	        ;;
-		"" | $divider)
-            device_menu "$device"
-            ;;
 	    *)
 			local connection
 			for i in "${actions[@]}"; do
@@ -248,15 +253,17 @@ device_menu() {
 
 # opens a wofi menu with current network status and options to connect
 network_menu() {
-	local options networking_state devices actions selected
+	local options selected devices networking_state 
 
+	devices=()
 	networking_state=$(nmcli networking)
+	
 	if [[ "$networking_state" == "enabled" ]]; then
-		local device_status devices_full
+		local devices_full devices_status
 
-		device_status=$(nmcli device status)
 		devices_full=()
-		IFS=$'\n' read -rd '' -a devices_full <<< "$device_status"
+		devices_status=$(nmcli device status)
+		IFS=$'\n' read -rd '' -a devices_full <<< "$devices_status"
 
 		for i in "${devices_full[@]}"; do
 			local device_name device_type device_state device_connection
@@ -281,15 +288,8 @@ network_menu() {
 			device_connection=$(printf %b "$i" | sed "s/$device_state/\:/g" | cut -d ":" -f 2)
 			device_connection="${device_connection#"${device_connection%%[![:space:]]*}"}"
 
-			actions="$actions$device_name [$device_type]:\n"
-			options="$options$device_name [$device_type]:\n"
-			options="$options\tstate: $device_state\n"
-
-			if [[ "$device_connection" == *"--"* ]]; then
-				continue
-			fi
-
-			options="$options\tconnection: $device_connection\n"
+			options="$options$device_name: [$device_type] $device_connection\n"
+			devices+=("$device_name: [$device_type] $device_connection")
 		done
 
 		options="${options}turn off\n"
@@ -299,13 +299,11 @@ network_menu() {
 
 	options="${options}open connection editor\nexit"
 
-	# separate options and actions
-	actions=()
-	IFS=$'\n' read -rd '' -a actions <<< ${actions##*&}
-	options=${options%&*}
-
 	# launch wofi and choose option
-	selected="$(printf %b "$options" | $wofi_command -p "Network" --width=280 --height=300)"
+	selected="$(printf %b "$options" | $wofi_command -p "Network" --width=280 --height=260)"
+
+	# do not keep cache
+	rm "/tmp/wofi-dump-cache"
 
 	# match chosen option to command
 	case $selected in
@@ -322,14 +320,15 @@ network_menu() {
 			network_menu
 	        ;;
 	    "open connection editor")
-	        nm-connection-editor
+	        nm-connection-editor &
 			network_menu
 	        ;;
 	    *)
 			local device
-			for i in "${actions[@]}"; do
+			for i in "${devices[@]}"; do
 				if [[ "$selected" == "$i" ]]; then
-					device="$selected"
+					device=$(printf %b "$selected" | cut -d ":" -f 1)
+					printf %b "$device"
 				fi
 			done
 			if [[ "$device" == "" ]]; then
@@ -343,6 +342,3 @@ network_menu() {
 
 # main 
 network_menu
-
-# do not keep cache
-rm "/tmp/wofi-dump-cache"
