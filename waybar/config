@@ -55,7 +55,7 @@
     "format-disconnected": "󰲛",
     "format-disabled": "󰅛",
     "tooltip-format-ethernet": "Interface: Ethernet\nInterface Name: {ifname}\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
-    "tooltip-format-wifi": "Interface: Wireless\nESSID: {essid}\nSignal Strength: {signalStrength}%\nFrequency: {frequency}GHz\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
+    "tooltip-format-wifi": "Interface: Wireless\nSSID: {essid}\nSignal Strength: {signalStrength}%\nFrequency: {frequency}GHz\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
     "on-click": "$HOME/.config/waybar/custom_modules/wofi-network.sh"
   },
   "bluetooth": {
