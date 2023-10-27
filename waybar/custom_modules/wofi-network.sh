@@ -100,7 +100,7 @@ secret_menu() {
 	options="SSID: $ssid\npassword: $password\nqrcode\nback"
 
 	# launch wofi and select option
-	selected="$(printf %b "$options" | $MENU_CMD -p "$ssid" --width=280 --height=260)"
+	selected="$(printf %b "$options" | $MENU_CMD -p "$ssid" --width=240 --height=200)"
 
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -145,7 +145,7 @@ saved_connections_menu() {
 	options="$options\nadd connection\nback"
 
 	# launch wofi and select option
-	selected=$(printf %b "$options" | $MENU_CMD -p "Saved Connections" --width=280 --height=300)
+	selected=$(printf %b "$options" | $MENU_CMD -p "Saved Connections" --width=240 --height=300)
 
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -229,7 +229,7 @@ connection_menu() {
 	options="$options\nback"
 
 	# launch wofi and select option
-	selected="$(printf %b "$options" | $MENU_CMD -p "$connection" --width=280 --height=260)"
+	selected="$(printf %b "$options" | $MENU_CMD -p "$connection" --width=240 --height=260)"
 
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -347,7 +347,7 @@ interface_menu() {
 	options="$options\nback"
 
 	# launch wofi and select option
-	selected="$(printf %b "$options" | $MENU_CMD -p "$interface" --width=280 --height=300)"
+	selected="$(printf %b "$options" | $MENU_CMD -p "$interface" --width=260 --height=300)"
 	
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -439,7 +439,7 @@ network_menu() {
 
 			interface_connection=$(printf %b "$i" | sed "s/$interface_state/\:/g" | cut -d ":" -f 2 | trim_whitespaces)
 
-			options="$options\n\t$interface_name: [$interface_type] $interface_connection"
+			options="$options\n\t$interface_name: $interface_connection"
 			interfaces="$interfaces\n$interface_name"
 		done
 	
@@ -452,7 +452,7 @@ network_menu() {
 	options="${options:2}"
 
 	# launch wofi and select option
-	selected="$(printf %b "$options" | $MENU_CMD -p "Network" --width=280 --height=260)"
+	selected="$(printf %b "$options" | $MENU_CMD -p "Network" --width=240 --height=260)"
 
 	# do not keep cache
 	rm "$CACHE_FILE"
