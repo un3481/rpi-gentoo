@@ -18,275 +18,186 @@ echoexit() {
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis bluetoothctl > /dev/null || echoexit "'bluetoothctl' not found."
 
-# Constants
-divider="-------------------------"
+# constants
+TMPDIR="/tmp"
+CACHE_FILE="$TMPDIR/wofi-dump-cache"
 
-# Rofi command to pipe into, can add any options here
-wofi_command="wofi --dmenu --location=3 --x=-160 --cache-file=/tmp/wofi-dump-cache"
-
-# Checks if bluetooth controller is powered on
-power_on() {
-    if bluetoothctl show | grep -q "Powered: yes"; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Toggles power state
-toggle_power() {
-    if power_on; then
-        bluetoothctl power off
-    else
-        if rfkill list bluetooth | grep -q 'blocked: yes'; then
-            rfkill unblock bluetooth && sleep 3
-        fi
-        bluetoothctl power on
-    fi
-}
-
-# Checks if controller is scanning for new devices
-scan_on() {
-  if bluetoothctl show | grep -q "Discovering: yes"; then
-    echo "scan (on)"
-    return 0
-  else
-    echo "scan (off)"
-    return 1
-  fi
-}
-
-# Toggles scanning state
-toggle_scan() {
-    if scan_on; then
-        kill $(pgrep -f "bluetoothctl scan on")
-        bluetoothctl scan off
-    else
-        bluetoothctl scan on
-        sleep 5
-    fi
-}
-
-# Checks if controller is able to pair to devices
-pairable_on() {
-  if bluetoothctl show | grep -q "Pairable: yes"; then
-    echo "pairable (yes)"
-    return 0
-  else
-    echo "pairable (no)"
-    return 1
-  fi
-}
-
-# Toggles pairable state
-toggle_pairable() {
-    if pairable_on; then
-        bluetoothctl pairable off
-    else
-        bluetoothctl pairable on
-    fi
-}
-
-# Checks if controller is discoverable by other devices
-discoverable_on() {
-  if bluetoothctl show | grep -q "Discoverable: yes"; then
-    echo "discoverable (yes)"
-    return 0
-  else
-    echo "discoverable (no)"
-    return 1
-  fi
-}
-
-# Toggles discoverable state
-toggle_discoverable() {
-    if discoverable_on; then
-        bluetoothctl discoverable off
-    else
-        bluetoothctl discoverable on
-    fi
-}
-
-# Checks if a device is connected
-device_connected() {
-    device_info=$(bluetoothctl info "$1")
-    if echo "$device_info" | grep -q "Connected: yes"; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-# Toggles device connection
-toggle_connection() {
-    if device_connected $1; then
-        bluetoothctl disconnect $1
-        device_menu "$device"
-    else
-        bluetoothctl connect $1
-        device_menu "$device"
-    fi
-}
-
-# Checks if a device is paired
-device_paired() {
-    device_info=$(bluetoothctl info "$1")
-    if echo "$device_info" | grep -q "Paired: yes"; then
-      echo "paired - yes"
-      return 0
-    else
-      echo "paired - no"
-      return 1
-    fi
-}
-
-# Toggles device paired state
-toggle_paired() {
-    if device_paired $1; then
-        bluetoothctl remove $1
-        device_menu "$device"
-    else
-        bluetoothctl pair $1
-        device_menu "$device"
-    fi
-}
-
-# Checks if a device is trusted
-device_trusted() {
-    device_info=$(bluetoothctl info "$1")
-    if echo "$device_info" | grep -q "Trusted: yes"; then
-      echo "trusted - yes"
-        return 0
-    else
-      echo "trusted - no"
-        return 1
-    fi
-}
-
-# Toggles device connection
-toggle_trust() {
-    if device_trusted $1; then
-        bluetoothctl untrust $1
-        device_menu "$device"
-    else
-        bluetoothctl trust $1
-        device_menu "$device"
-    fi
-}
+# menu command to pipe into, can add any options here
+MENU_CMD="wofi --dmenu --location=3 --cache-file=$CACHE_FILE"
 
 # A submenu for a specific device that allows connecting, pairing, and trusting
 device_menu() {
-    local device
+    local options selected close device device_name mac device_info
     device=$1
 
     # Get device name and mac address
-    device_name=$(echo $device | cut -d ' ' -f 3-)
-    mac=$(echo $device | cut -d ' ' -f 2)
+    device_name=$(printf %s "$device" | cut -d ' ' -f 3)
+    device_mac=$(printf %s "$device" | cut -d ' ' -f 2)
+    device_info=$(bluetoothctl info "$device_mac")
 
-    # Build options
-    if device_connected $mac; then
-      connected="connected - yes"
+    if $(printf %s "$device_info" | grep -q "Connected: yes"); then
+        options="$options\nconnected [yes]"
     else
-      connected="connected - no"
+        options="$options\nconnected [no]"
     fi
-    paired=$(device_paired $mac)
-    trusted=$(device_trusted $mac)
-    options="$connected\n$paired\n$trusted"
 
-    # Open wofi menu, read chosen option
-    chosen="$(echo -e "$options" | $wofi_command -p "$device_name" --width="200" --height="230" )"
+    if $(printf %s "$device_info" | grep -q "Paired: yes"); then
+        options="$options\npaired [yes]"
+    else
+        options="$options\npaired [no]"
+    fi
 
-    # Match chosen option to command
-    case $chosen in
+    if $(printf %s "$device_info" | grep -q "Trusted: yes"); then
+        options="$options\ntrusted [yes]"
+    else
+        options="$options\ntrusted [no]"
+    fi
+
+    options="$options\nback"
+
+    # open wofi menu, read selected option
+    selected="$(echo -e "$options" | $MENU_CMD -p "$device_name" --x=-160 --width=200 --height=230)"
+
+    # do not keep cache
+	rm "$CACHE_FILE"
+
+    # match selected option to command
+    case $selected in
+        "")
+            exit 0
+            ;;
         "back")
-            bluetooth_menu
+            close="1"
             ;;
-        $connected)
-            toggle_connection $mac
-            device_menu "$device"
+        "connected [no]")
+            bluetoothctl connect "$device_mac"
             ;;
-        $paired)
-            toggle_paired $mac
-            device_menu "$device"
+        "connected [yes]")
+            bluetoothctl disconnect "$device_mac"
             ;;
-        $trusted)
-            toggle_trust $mac
-            device_menu "$device"
+        "paired [no]")
+            bluetoothctl pair "$device_mac"
+            ;;
+        "paired [yes]")
+            bluetoothctl remove "$device_mac"
+            ;;
+        "trusted [no]")
+            bluetoothctl trust "$device_mac"
+            ;;
+        "trusted [yes]")
+            bluetoothctl untrust "$device_mac"
             ;;
         *)
-            device_menu "$device"
             ;;
     esac
+
+    if [[ "$close" == "" ]]; then
+        device_menu "$device"
+    fi
 }
 
 # opens a wofi menu with current bluetooth status and options to connect
 bluetooth_menu() {
+    local options selected close bluetooth_status bluetooth_enabled
 
+    bluetooth_status=$(bluetoothctl show)
+    bluetooth_enabled=$(printf %s "$bluetooth_status" | grep "Powered: yes")
+     
     # Get menu options
-    if power_on; then
-        power="turn off"
+    if [[ -n $bluetooth_enabled ]]; then
+        local bluetooth_devices devices
 
-        # Human-readable names of devices, one per line
-        # If scan is off, will only list paired devices
-        full_devices=$(bluetoothctl devices)
-        devices=$(printf %s "$full_devices" | grep "Device" | cut -d ' ' -f 3-)
+        options="devices:"
+        bluetooth_devices=$(bluetoothctl devices)
 
-        # Get controller flags
-        scan=$(scan_on)
-        pairable=$(pairable_on)
-        discoverable=$(discoverable_on)
+        devices=$(printf %s "$bluetooth_devices" | grep "Device" | cut -d ' ' -f 3 | sed "s/^/\t/g")
+        if [[ -n "$devices" ]]; then
+            options="$options\n$devices"
+        fi
 
-        # Options passed to wofi
-        options="$devices\n$divider\n$power\n$scan\n$pairable\n$discoverable\nexit"
+        if $(printf %s "$bluetooth_status" | grep -q "Discovering: yes"); then
+            options="$options\nscan [on]"
+        else
+            options="$options\nscan [off]"
+        fi
+
+        if $(printf %s "$bluetooth_status" | grep -q "Pairable: yes"); then
+            options="$options\npairable [yes]"
+        else
+            options="$options\npairable [no]"
+        fi
+
+        if $(printf %s "$bluetooth_status" | grep -q "Discoverable: yes"); then
+            options="$options\ndiscoverable [yes]"
+        else
+            options="$options\ndiscoverable [no]"
+        fi
         
-        width="200"
-        height="240"
+        options="$options\nturn off"
     else
-        power="turn on"
-        options="$power"
-        
-        width="100"
-        height="80"
+        options="turn on"
     fi
+
+    options="$options\nexit"
  
     # launch wofi and choose option
-    chosen="$(echo -e "$options" | $wofi_command -p "Bluetooth" --width="$width" --height="$height")"
+    selected="$(echo -e "$options" | $MENU_CMD -p "Bluetooth" --x=-160 --width=200 --height=230)"
 
-    # match chosen option to command
-    case $chosen in
-        $power)
-            toggle_active
-            bluetooth_menu
-            ;;
-        $scan)
-            toggle_scan
-            bluetooth_menu
-            ;;
-        $discoverable)
-            toggle_discoverable
-            bluetooth_menu
-            ;;
-        $pairable)
-            toggle_pairable
-            bluetooth_menu
+    # do not keep cache
+	rm "$CACHE_FILE"
+
+    # match selected option to command
+    case $selected in
+        "")
+            exit 0
             ;;
         "exit")
+            close="1"
+            ;;
+        "turn on")
+            if rfkill list bluetooth | grep -q 'blocked: yes'; then
+                rfkill unblock bluetooth
+                sleep 3
+            fi
+            bluetoothctl power on
+            ;;
+        "turn off")
+            bluetoothctl power off
+            ;;
+        "scan [off]")
+            (bluetoothctl scan on) &
+            sleep 3
+            ;;
+        "scan [on]")
+            kill $(pgrep -f "bluetoothctl scan on")
+            bluetoothctl scan off
+            ;;
+        "pairable [off]")
+            bluetoothctl pairable on
+            ;;
+        "pairable [on]")
+            bluetoothctl pairable off
+            ;;
+        "discoverable [off]")
+            bluetoothctl discoverable on
+            ;;
+        "discoverable [on]")
+            bluetoothctl discoverable off
             ;;
         *)
-            local device
-            device=$(printf %s "$full_devices" | grep "$chosen")
-            # Open a submenu if a device is selected
-            if [[ $device ]]; then
+            local sel device
+            sel=$(printf %s "$selected" | trim_whitespaces)
+            device=$(printf %s "$bluetooth_devices" | grep "$sel")
+            if [[ -n $device ]]; then
                 device_menu "$device"
-            else 
-                bluetooth_menu
             fi
             ;;
     esac
+
+    if [[ "$close" == "" ]]; then
+        bluetooth_menu
+    fi
 }
 
 # main
 bluetooth_menu
-
-# do not keep cache
-rm "/tmp/wofi-dump-cache"
