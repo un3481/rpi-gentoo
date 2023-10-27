@@ -108,16 +108,16 @@ secret_menu() {
 	# match selected option to command
 	case $selected in
 		"")
-			exit 0
-            ;;
+		  exit 0
+      ;;
 		"back")
-			close="1"
-	        ;;
+		  close="1"
+	    ;;
 	 	"qrcode")
 			qrcode_display "$interface" "$ssid" "$security" "$password"
-	        ;;
-	    *)
-	        ;;
+	    ;;
+	  *)
+	    ;;
 	esac
 
 	if [[ "$close" == "" ]]; then
