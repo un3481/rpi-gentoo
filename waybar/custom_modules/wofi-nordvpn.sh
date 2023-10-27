@@ -27,12 +27,12 @@ MENU_CMD="wofi --dmenu --location=3 --cache-file=/tmp/wofi-dump-cache"
 
 # Show vpn status.
 status_menu() {
-    local options selected
+    local options selected close
     options="$(nordvpn status | tr -d '\r-' | sed 's/^ *//')"
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Status" --x=-320 --width="260" --height="240")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Status" --x=-320 --width=260 --height=240)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -40,24 +40,28 @@ status_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            nordvpn_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         *)
-            status_menu
             ;;
     esac
+
+    if [[ "$close" == "" ]]; then
+		status_menu
+	fi
 }
 
 # Show vpn settings.
 settings_menu() {
-    local options selected
+    local options selected close
     options="$(nordvpn settings | tr -d '\r-' | sed 's/^ *//')"
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Settings" --x=-320 --width="260" --height="240")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Settings" --x=-320 --width=260 --height=240)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -65,24 +69,28 @@ settings_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            nordvpn_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         *)
-            settings_menu
             ;;
     esac
+
+    if [[ "$close" == "" ]]; then
+		settings_menu
+	fi
 }
 
 # country selection
 countries_menu() {
-    local options selected nl
+    local options selected close
     options=$(nordvpn countries | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width="200" --height="200")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
     # do not keep cache
 	rm $CACHE_FILE
@@ -90,30 +98,33 @@ countries_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            connect_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         "default")
             nordvpn connect
-            countries_menu
             ;;
         *)
             nordvpn connect "$selected"
-            countries_menu
             ;;
     esac
+
+    if [[ "$close" == "" ]]; then
+		countries_menu
+	fi
 }
 
 # city selection
 cities_menu() {
-    local options selected country
+    local options selected close country
     country=$1
     options=$(nordvpn cities "$country" | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Cities" --x=-320 --width="180" --height="200")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Cities" --x=-320 --width=180 --height=200)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -121,29 +132,32 @@ cities_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            countries_cities_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         "default")
             nordvpn connect "$country"
-            cities_menu "$country"
             ;;
         *)
             nordvpn connect "$country" "$selected"
-            cities_menu "$country"
             ;;
     esac
+
+	if [[ "$close" == "" ]]; then
+		cities_menu "$country"
+	fi
 }
 
 # country and city selection
 countries_cities_menu() {
-    local options selected
+    local options selected close
     options=$(nordvpn countries | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)
     options="back\n$options"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width="200" --height="200")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
     # do not keep cache
 	rm $CACHE_FILE
@@ -151,23 +165,28 @@ countries_cities_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            connect_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         *)
             cities_menu "$selected"
             ;;
     esac
+
+	if [[ "$close" == "" ]]; then
+		countries_cities_menu
+	fi
 }
 
 # nordvpn connect options
 connect_menu() {
-    local options selected
+    local options selected close
     options="default\ncountries\ncities\np2p\nonion\nback"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Connect" --x=-320 --width="140" --height="260")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Connect" --x=-320 --width=140 --height=260)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -175,13 +194,13 @@ connect_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "back")
-            nordvpn_menu
-            ;;
+		"back")
+			close="1"
+	        ;;
         "default")
             nordvpn connect
-            connect_menu
             ;;
         "countries")
             countries_menu
@@ -191,25 +210,26 @@ connect_menu() {
             ;;
         "p2p")
             nordvpn connect p2p
-            connect_menu
             ;;
         "onion")
             nordvpn connect onion_over_vpn
-            connect_menu
             ;;
         *)
-            connect_menu
             ;;
     esac
+
+	if [[ "$close" == "" ]]; then
+		connect_menu
+	fi
 }
 
 # opens a wofi menu with nordvpn options to connect
 nordvpn_menu() {
-    local options selected
+    local options selected close
     options="connect\ndisconnect\nstatus\nsettings\nexit"
 
     # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Nordvpn" --x=-320 --width="140" --height="230")
+    selected=$(printf %s "$options" | $MENU_CMD -p "Nordvpn" --x=-320 --width=140 --height=230)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -217,15 +237,16 @@ nordvpn_menu() {
     # match selected option to command
     case $selected in
         "")
+			exit 0
             ;;
-        "exit")
-            ;;
+		"exit")
+			close="1"
+	        ;;
         "connect")
             connect_menu
             ;;
         "disconnect")
             nordvpn disconnect
-            nordvpn_menu
             ;;
         "status")
             status_menu
@@ -234,9 +255,12 @@ nordvpn_menu() {
             settings_menu
             ;;
         *)
-            nordvpn_menu
             ;;
     esac
+
+	if [[ "$close" == "" ]]; then
+		nordvpn_menu
+	fi
 }
 
 # main
