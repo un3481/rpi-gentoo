@@ -32,7 +32,7 @@ status_menu() {
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Status" --x=-320 --width=260 --height=240)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Status" --x=-320 --width=260 --height=240)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -61,7 +61,7 @@ settings_menu() {
     options="$options\nback"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Settings" --x=-320 --width=260 --height=240)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Settings" --x=-320 --width=260 --height=240)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -90,7 +90,7 @@ countries_menu() {
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
     # do not keep cache
 	rm $CACHE_FILE
@@ -124,7 +124,7 @@ cities_menu() {
     options="back\ndefault\n$options"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Cities" --x=-320 --width=180 --height=200)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Cities" --x=-320 --width=180 --height=200)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -157,7 +157,7 @@ countries_cities_menu() {
     options="back\n$options"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
     # do not keep cache
 	rm $CACHE_FILE
@@ -186,7 +186,7 @@ connect_menu() {
     options="default\ncountries\ncities\np2p\nonion\nback"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Connect" --x=-320 --width=140 --height=260)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Connect" --x=-320 --width=140 --height=260)
 
     # do not keep cache
 	rm $CACHE_FILE
@@ -229,7 +229,7 @@ nordvpn_menu() {
     options="connect\ndisconnect\nstatus\nsettings\nexit"
 
     # launch wofi and select option
-    selected=$(printf %s "$options" | $MENU_CMD -p "Nordvpn" --x=-320 --width=140 --height=230)
+    selected=$(printf %b "$options" | $MENU_CMD -p "Nordvpn" --x=-320 --width=140 --height=230)
 
     # do not keep cache
 	rm $CACHE_FILE
