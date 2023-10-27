@@ -238,10 +238,10 @@ connection_menu() {
 	case $selected in
 		"")
 			exit 0
-            ;;
+      ;;
 		"back")
 			close="1"
-	        ;;
+	    ;;
 		"connect")
 			nmcli connection up id "$connection"
 			;;
@@ -265,8 +265,8 @@ connection_menu() {
 		"delete connection")
 			nmcli connection delete id "$connection"
 			;;
-	    *)
-	        ;;
+	  *)
+	    ;;
 	esac
 
 	if [[ "$close" == "" ]]; then
@@ -356,10 +356,10 @@ interface_menu() {
 	case $selected in
 		"")
 			exit 0
-            ;;
+      ;;
 		"back")
 			close="1"
-	        ;;
+	    ;;
 	 	"connect" | "connect default")
 			nmcli device connect "$interface"
 			;;
@@ -381,7 +381,7 @@ interface_menu() {
 		"saved connections")
 			saved_connections_menu "$interface"
 			;;
-	    *)
+	  *)
 			local connection ssid
 			ssid=$(printf %s "$selected" | sed "s/\t/\:/g" | cut -d ":" -f 2 | sed "s/\*//g" | trim_whitespaces)
 			for i in "${connections[@]}"; do
@@ -394,7 +394,7 @@ interface_menu() {
 			if [[ -n "$connection" ]]; then
 				connection_menu "$interface" "$connection"
 			fi
-	        ;;
+	    ;;
 	esac
 
 	if [[ "$close" == "" ]]; then
@@ -423,9 +423,9 @@ network_menu() {
 			interface_name=$(printf %b "$i" | awk '{print $1}')
 			interface_type=$(printf %b "$i" | awk '{print $2}')
 
-			if	[[ "$interface_type" == "TYPE"     ]] || \
-				[[ "$interface_type" == "loopback" ]] || \
-				[[ "$interface_type" == "wifi-p2p" ]]; then
+			if [[ "$interface_type" == "TYPE"     ]] || \
+			    [[ "$interface_type" == "loopback" ]] || \
+			    [[ "$interface_type" == "wifi-p2p" ]]; then
 				continue
 			fi
 
@@ -461,20 +461,20 @@ network_menu() {
 	case $selected in
 		"")
 			exit 0
-            ;;
+      ;;
 		"exit")
 			close="1"
-	        ;;
+	    ;;
 	 	"turn on")
-	        nmcli networking on
-	        ;;
-	    "turn off")
-	        nmcli networking off
-	        ;;
-	    "open connection editor")
-	        nm-connection-editor &
-	        ;;
-	    *)
+	    nmcli networking on
+	    ;;
+	  "turn off")
+	    nmcli networking off
+	    ;;
+	  "open connection editor")
+	    nm-connection-editor &
+	    ;;
+	  *)
 			local interface interface_selected
 			interface_selected=$(printf %b "$selected" | cut -d ":" -f 1 | trim_whitespaces)
 			interface=$(printf %b "$interfaces" | grep "$interface_selected" -m 1)

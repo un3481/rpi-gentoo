@@ -35,23 +35,23 @@ status_menu() {
     selected=$(printf %b "$options" | $MENU_CMD -p "Status" --x=-320 --width=260 --height=240)
 
     # do not keep cache
-	rm $CACHE_FILE
+	  rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
-        "")
-			exit 0
-            ;;
-		"back")
-			close="1"
-	        ;;
-        *)
-            ;;
+      "")
+			  exit 0
+        ;;
+		  "back")
+			  close="1"
+	      ;;
+      *)
+        ;;
     esac
 
     if [[ "$close" == "" ]]; then
-		status_menu
-	fi
+		  status_menu
+	  fi
 }
 
 # Show vpn settings.
@@ -64,23 +64,23 @@ settings_menu() {
     selected=$(printf %b "$options" | $MENU_CMD -p "Settings" --x=-320 --width=260 --height=240)
 
     # do not keep cache
-	rm $CACHE_FILE
+	  rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
-        "")
-			exit 0
-            ;;
-		"back")
-			close="1"
-	        ;;
-        *)
-            ;;
+      "")
+			  exit 0
+        ;;
+		  "back")
+			  close="1"
+	      ;;
+      *)
+        ;;
     esac
 
     if [[ "$close" == "" ]]; then
-		settings_menu
-	fi
+		  settings_menu
+	  fi
 }
 
 # country selection
@@ -93,27 +93,27 @@ countries_menu() {
     selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
     # do not keep cache
-	rm $CACHE_FILE
+	  rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
-        "")
-			exit 0
-            ;;
-		"back")
-			close="1"
-	        ;;
-        "default")
-            nordvpn connect
-            ;;
-        *)
-            nordvpn connect "$selected"
-            ;;
+      "")
+			  exit 0
+        ;;
+		  "back")
+			  close="1"
+	      ;;
+      "default")
+        nordvpn connect
+        ;;
+      *)
+        nordvpn connect "$selected"
+        ;;
     esac
 
     if [[ "$close" == "" ]]; then
-		countries_menu
-	fi
+		  countries_menu
+	  fi
 }
 
 # city selection
@@ -127,22 +127,22 @@ cities_menu() {
     selected=$(printf %b "$options" | $MENU_CMD -p "Cities" --x=-320 --width=180 --height=200)
 
     # do not keep cache
-	rm $CACHE_FILE
+    rm $CACHE_FILE
 
     # match selected option to command
     case $selected in
-        "")
-			exit 0
-            ;;
-		"back")
-			close="1"
-	        ;;
-        "default")
-            nordvpn connect "$country"
-            ;;
-        *)
-            nordvpn connect "$country" "$selected"
-            ;;
+      "")
+			  exit 0
+        ;;
+		  "back")
+			  close="1"
+	      ;;
+      "default")
+        nordvpn connect "$country"
+        ;;
+      *)
+        nordvpn connect "$country" "$selected"
+        ;;
     esac
 
 	if [[ "$close" == "" ]]; then
@@ -152,28 +152,28 @@ cities_menu() {
 
 # country and city selection
 countries_cities_menu() {
-    local options selected close
-    options=$(nordvpn countries | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)
-    options="back\n$options"
+  local options selected close
+  options=$(nordvpn countries | tr -d '\r,-' | tr -s "[:blank:]" "\n" | sed '/^\s*$/d' | sort)
+  options="back\n$options"
 
-    # launch wofi and select option
-    selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
+  # launch wofi and select option
+  selected=$(printf %b "$options" | $MENU_CMD -p "Countries" --x=-320 --width=200 --height=200)
     
-    # do not keep cache
+  # do not keep cache
 	rm $CACHE_FILE
 
-    # match selected option to command
-    case $selected in
-        "")
-			exit 0
-            ;;
-		"back")
-			close="1"
-	        ;;
-        *)
-            cities_menu "$selected"
-            ;;
-    esac
+  # match selected option to command
+  case $selected in
+    "")
+		  exit 0
+      ;;
+	  "back")
+		  close="1"
+      ;;
+    *)
+      cities_menu "$selected"
+      ;;
+  esac
 
 	if [[ "$close" == "" ]]; then
 		countries_cities_menu
