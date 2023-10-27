@@ -84,6 +84,6 @@ waybar_json() {
 # main
 outdated=$(check_outdated $LASTRUN_FILE 300)
 if (( $outdated )); then
-  $(checkupdates --nocolor &)
+  (checkupdates --nocolor) &
 fi
 waybar_json

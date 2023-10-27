@@ -18,6 +18,8 @@ echoexit() {
 whereis wofi > /dev/null || echoexit "'wofi' not found."
 whereis nmcli > /dev/null || echoexit "'nmcli' not found."
 whereis qrencode > /dev/null || echoexit "'qrencode' not found."
+whereis swayimg > /dev/null || echoexit "'swayimg' not found."
+whereis wayland-info > /dev/null || echoexit "'wayland-info' not found."
 whereis nm-connection-editor > /dev/null || echoexit "'nm-connection-editor' not found."
 
 # constants
@@ -42,13 +44,16 @@ trim_whitespaces() {
 }
 
 get_show_property() {
-	local property
-	property=$(printf %b "$interface_info" | grep "$1" -m 1 | sed "s/$1//g" | trim_whitespaces)
+	local text label property
+	text=$1
+	label=$2
+	property=$(\
+		printf %b "$text" \
+		| grep "$label" -m 1 \
+		| sed "s/$label//g" \
+		| trim_whitespaces \
+	)
 	printf %s "$property"
-}
-
-get_list_property() {
-	
 }
 
 # available options
@@ -113,7 +118,7 @@ manual_hidden() {
 }
 
 qrencode_menu() {
-	local interface ssid security password image_file menu_style
+	local interface ssid security password image_file
 	interface=$1
 	ssid=$2
 	security=$3
@@ -122,28 +127,21 @@ qrencode_menu() {
 	# set qrcode parameters
 	image_file="$QRCODE_FILE-$interface.png"
 	text="WIFI:S:$ssid;T:$security;P:$password;;"
-	menu_style="
-		entry {
-			enabled: false;
-		}
-		window {
-			border-radius: 6mm;
-			padding: 1mm;
-			width: 100mm;
-			height: 100mm;
-			location: \"Northeast\";
-			background-image: url(\"$image_file\", both);
-		}
-	"
-	
+
 	# generate qrcode image in tmp folder
 	qrencode -t png -o "$image_file" -l H -s 25 -m 2 --dpi=192 "$text"
+	
+	# find monitor resolution and calculate image position
+	local wl_output_mode display_width xpos
+	wl_output_mode=$(wayland-info --interface "wl_output" | grep "width:" | grep "height:" | grep "refresh:")
+	display_width=$(printf %s "$wl_output_mode" | cut -d ":" -f 2 | trim_whitespaces | cut -d " " -f 1)
+	xpos=$(( $display_width - 430 ))
 
-	# launch wofi and select option
-	selected="$(printf %b "" | $MENU_CMD -p "$ssid" --width=280 --height=260 --style="$menu_style")"
+	# launch swayimg at specified position
+	swayimg "$image_file" --geometry="$xpos,24,230,230"
 
-	# do not keep cache
-	rm "$CACHE_FILE"
+	# remove image file
+	rm "$image_file"
 
 	show_password_menu "$interface"
 }
@@ -221,10 +219,10 @@ interface_menu() {
 	interface_info=$(nmcli device show "$interface")
 
 	local interface_name interface_type interface_mac interface_state
-	interface_name=$(get_show_property "GENERAL.DEVICE:")
-	interface_type=$(get_show_property "GENERAL.TYPE:")
-	interface_mac=$(get_show_property "GENERAL.HWADDR:")
-	interface_state=$(get_show_property "GENERAL.STATE:")
+	interface_name=$(get_show_property "$interface_info" "GENERAL.DEVICE:")
+	interface_type=$(get_show_property "$interface_info" "GENERAL.TYPE:")
+	interface_mac=$(get_show_property "$interface_info" "GENERAL.HWADDR:")
+	interface_state=$(get_show_property "$interface_info" "GENERAL.STATE:")
 	
 	# get menu options
 	options="$interface_name:"
@@ -232,16 +230,7 @@ interface_menu() {
 	options="$options\n\tMAC: $interface_mac"
 	options="$options\n\tstate: $interface_state"
 	
-	# get connected options
-	if [[ "$interface_state" == *"connected"* ]]; then
-		local interface_connection interface_ip interface_gateway
-		interface_connection=$(get_show_property "GENERAL.CONNECTION:")
-
-		options="$options\nconnection: $interface_connection"
-		options="$options\ndisconnect"
-	else
-		options="$options\nconnect"
-	fi
+	
 
 	# get wifi options
 	if [[ "$interface_type" == *"wifi"* ]]; then
@@ -251,22 +240,43 @@ interface_menu() {
 		if [[ "$radio_state" == *"enabled"* ]]; then
 			local wifi_list
 
-			options="$options\nturn off\nscan"
-			
 			# get local wifi list
-			options="$options\nwifi list:"
-			wifi_list=$(nmcli device wifi list ifname "$interface" --rescan no)
-			options="$options\n$wifi_list"
+			options="$options\nnetworks:"
+
+			wifi_list=$(nmcli --get-values "IN-USE,SSID,BARS" device wifi list ifname "$interface" --rescan no)
+			wifi_list=$(printf %s "$wifi_list" | sed "s/\:/\t/g")
+			
+			if [[ -n "$wifi_list" ]]; then
+				options="$options\n$wifi_list"
+			fi
+
+			# add wifi options
+			options="$options\nscan"
+
+			# get connected options
+			if [[ "$interface_state" == *"connected"* ]]; then
+				options="$options\ndisconnect"
+				options="$options\nshow password"
+			else
+				options="$options\nconnect"
+			fi
+
+			options="$options\nturn off"
 		else
 			options="$options\nturn on"
 		fi
-
+	else
+		# get connected options
 		if [[ "$interface_state" == *"connected"* ]]; then
-			options="$options\nshow password"
+			local interface_connection interface_ip interface_gateway
+			interface_connection=$(get_show_property "$interface_info" "GENERAL.CONNECTION:")
+
+			options="$options\nconnection: $interface_connection"
+			options="$options\ndisconnect"
+		else
+			options="$options\nconnect"
 		fi
 	fi
-
-	
 
 	options="$options\nback"
 
@@ -408,5 +418,5 @@ network_menu() {
 	esac
 }
 
-# main 
+# main
 network_menu
