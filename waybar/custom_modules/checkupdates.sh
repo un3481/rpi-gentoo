@@ -45,9 +45,9 @@ check_outdated() {
 
   # return elapsed time >= preset time
   if (( $elapsed >= $preset )); then
-    printf %s "1"
+    printf %s "outdated"
   else
-    printf %s "0"
+    printf %s "up-to-date"
   fi
 }
 
@@ -83,7 +83,7 @@ waybar_json() {
 
 # main
 outdated=$(check_outdated $LASTRUN_FILE 300)
-if (( $outdated )); then
-  (checkupdates --nocolor) &
+if [[ "$outdated" == "outdated" ]]; then
+  (checkupdates --nocolor && sleep 10) &
 fi
 waybar_json
