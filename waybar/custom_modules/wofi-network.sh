@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # WOFI NETWORK-MANAGER
 #
