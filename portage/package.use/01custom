@@ -1,0 +1,20 @@
+
+# Use pipewire as sound server (along with global USE="pipewire pulseaudio")
+media-sound/pulseaudio -daemon
+media-video/pipewire sound-server
+
+# Compile mesa without llvm (mesa doesnt use llvm in aarch64)
+media-libs/mesa -llvm
+
+# Use seatd without systemd or elogind (seatd is required by sway)
+sys-auth/seatd builtin server
+
+# Enable svg support for swaybg
+gui-apps/swaybg gdk-pixbuf
+
+# Compile netsurf with gtk support
+www-client/netsurf gtk
+
+# Compile palemoon with gtk2 (X11) support
+www-client/palemoon gtk2 threads
+
