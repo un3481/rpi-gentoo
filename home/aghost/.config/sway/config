@@ -40,10 +40,13 @@ output * bg "${HOME}/Pictures/Wallpapers/blobs-d.svg" fill
 ### Idle configuration
 #
 exec swayidle -w \
-	timeout 180 'swaylock -f -c 000000' \
+	timeout 180 'swaylock -f' \
 	timeout 300 'swaymsg "output * power off"' \
 	resume 'swaymsg "output * power on"' \
-	before-sleep 'swaylock -f -c 000000' \
+	before-sleep 'swaylock -f'
+
+# Lock Screen
+bindsym $mod+Shift+x exec swaylock
 
 # This will lock your screen after 180 seconds of inactivity, then turn off
 # your displays after another 120 seconds, and turn your screens back on when
@@ -86,7 +89,6 @@ floating_modifier $mod normal
 
 # Reload the configuration file
 bindsym $mod+Shift+c reload
-bindsym $mod+Shift+l exec swaylock
 
 # Exit sway (logs you out of your Wayland session)
 bindsym $mod+Shift+e exec swaynag -t warning \
@@ -98,10 +100,10 @@ bindsym $mod+Shift+e exec swaynag -t warning \
 #
 
 # Move your focus around
-# bindsym $mod+$left focus left
-# bindsym $mod+$down focus down
-# bindsym $mod+$up focus up
-# bindsym $mod+$right focus right
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
 
 # Or use $mod+[up|down|left|right]
 bindsym $mod+Left focus left
@@ -110,10 +112,10 @@ bindsym $mod+Up focus up
 bindsym $mod+Right focus right
 
 # Move the focused window with the same, but add Shift
-#bindsym $mod+Shift+$left move left
-#bindsym $mod+Shift+$down move down
-#bindsym $mod+Shift+$up move up
-#bindsym $mod+Shift+$right move right
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
 
 # Ditto, with arrow keys
 bindsym $mod+Shift+Left move left
@@ -252,7 +254,7 @@ exec dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
 #
 # Disable X-Wayland
 #
-xwayland disable
+# xwayland disable
 
 #
 # WirePlumber Volume Control
