@@ -1,0 +1,4 @@
+
+# Compile firefox with hardware acceleration (GPU) support
+www-client/firefox hwaccel
+

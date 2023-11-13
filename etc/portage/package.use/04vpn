@@ -1,0 +1,3 @@
+
+# Prevent WireGuard from using wg-quick
+net-vpn/wireguard-tools -wg-quick

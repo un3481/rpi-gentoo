@@ -1,0 +1,5 @@
+
+# Prevent Network Manager from being installed
+net-misc/networkmanager
+net-misc/modemmanager
+

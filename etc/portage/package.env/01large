@@ -11,9 +11,10 @@ dev-lang/spidermonkey	notmpfs.conf j3.conf
 sys-devel/clang		notmpfs.conf j3.conf
 sys-devel/gcc		notmpfs.conf j3.conf
 sys-devel/llvm		notmpfs.conf j3.conf
+net-libs/nodejs		notmpfs.conf j3.conf
 app-office/libreoffice	notmpfs.conf j3.conf
 mail-client/thunderbird	notmpfs.conf j3.conf
 www-client/chromium	notmpfs.conf j3.conf
 www-client/firefox	notmpfs.conf j3.conf
-www-client/palemoon	notmpfs.conf j3.conf palemoon.conf
+net-im/telegram-desktop	notmpfs.conf j3.conf
 
