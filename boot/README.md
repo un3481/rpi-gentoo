@@ -41,17 +41,17 @@ And it's done.
 ### Editing fstab
 Your system may be unbootable now if you didn't configure your fstab file properly.
 The follwoing instructions assume that this repository is in "~/Projects/rpi-gentoo".
-To make sure that fstab is correct, you can get a working copy for the Raspberry PI from this folder.
+To make sure that fstab is correct, you can get a working copy for the Raspberry PI from this repo's "etc" folder.
 Copy the working fstab into "/etc/fstab":
 ```sh
-cp ~/Projects/rpi-gentoo/boot/fstab /etc/fstab 
+cp ~/Projects/rpi-gentoo/etc/fstab /etc/fstab 
 ```
 If you don't follow the above step correctly you may end up with an unbootable system.
 
 ### Copy the patch files
-The system should now be bootable, but some functionalities will likelly be missing.
+The system should now be bootable, but some important functionalities will be missing.
 The follwoing instructions assume that this repository is in "~/Projects/rpi-gentoo".
-In order to enable DRM and other tweaks, copy the patch files from this folder into boot:
+In order to enable GPU, DRM, Overclocking and other tweaks, copy the boot config files into boot folder:
 ```sh
 cp ~/Projects/rpi-gentoo/boot/config.txt /boot/config.txt
 cp ~/Projects/rpi-gentoo/boot/cmdline.txt /boot/cmdline.txt 
