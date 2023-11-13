@@ -40,10 +40,9 @@ output * bg "${HOME}/Pictures/Wallpapers/blobs-d.svg" fill
 ### Idle configuration
 #
 exec swayidle -w \
-	timeout 180 'swaylock -f' \
+	timeout 240 'swaylock -f' \
 	timeout 300 'swaymsg "output * power off"' \
 	resume 'swaymsg "output * power on"' \
-	before-sleep 'swaylock -f'
 
 # Lock Screen
 bindsym $mod+Shift+x exec swaylock
@@ -93,7 +92,7 @@ bindsym $mod+Shift+c reload
 # Exit sway (logs you out of your Wayland session)
 bindsym $mod+Shift+e exec swaynag -t warning \
 	-m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' \
-	-B 'Yes, exit sway' 'swaymsg exit'
+	-B 'Yes, exit sway' 'swaymsg exit' \
 
 #
 # Moving around:
