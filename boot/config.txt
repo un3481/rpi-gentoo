@@ -8,13 +8,21 @@ initramfs initramfs-linux.img followkernel
 # Automatically load overlays for detected DSI displays
 display_auto_detect=1
 
-# Uncomment to enable bluetooth
-#dtparam=krnbt=on
-
 # Disable monitor overscan
 disable_overscan=1
 
-[pi4]
-# Run as fast as firmware / board allows
-arm_boost=1
+# Uncomment to enable bluetooth
+#dtparam=krnbt=on
 
+[pi4]
+
+# Run as fast as firmware / board allows
+# arm_boost=1
+
+# Run with custom overclock settings
+arm_freq_min=300
+arm_freq=2100
+gpu_freq=750
+gpu_mem=256
+
+[all]
