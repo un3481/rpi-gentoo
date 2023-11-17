@@ -246,9 +246,14 @@ gaps inner 8
 input * xkb_layout "br"
 
 #
-# portals
+# enable portals
 #
 exec dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
+
+#
+# start pipewire as sound server
+#
+exec gentoo-pipewire-launcher &
 
 #
 # Disable X-Wayland

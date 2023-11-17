@@ -1,0 +1,4 @@
+
+# Compile thunderbird with hardware acceletarion (GPU) support
+mail-client/thunderbird hwaccel -openh264
+

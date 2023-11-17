@@ -1,4 +1,4 @@
 
-# Mask systemd and prevent it from being installed
+# Prevent systemd from being installed
 sys-apps/systemd
 
