@@ -16,3 +16,9 @@ fi
 
 
 # Put your fun stuff here.
+
+# add local bin folder to path
+export PATH="$PATH:$HOME/.local/bin"
+
+# create sudo alias with same path (lsudo = local sudo)
+alias lsudo='sudo -E env "PATH=$PATH"'
