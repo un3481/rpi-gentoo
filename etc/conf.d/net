@@ -1,4 +1,7 @@
 
+# Prevent DHCP from replacing local NTP config
+dhcp="nontp"
+
 # Note: DHCP is the default behavior if /etc/conf.d/net is empty or missing
 config_eth0="dhcp"
 
@@ -11,48 +14,6 @@ config_wlan0="dhcp"
 wireguard_wg0="/etc/wireguard/wg0.conf"
 config_wg0="10.5.0.2/32"
 
-postup() {
-	# After the wg0 interface is up, we add routing and firewall rules,
-	# which prevent packets from going through the normal routes, which are
-	# for "plaintext" packets.
-	# routing rules taken from: https://www.wireguard.com/netns/
-	# firewall rules taken from: man wg-quick
-	#
-	# If the connection to the VPN goes down, the firewall rule makes sure
-	# no other connections can be open, until you remove the interface
-	# using: rc-service net.wg0 stop
-	#
-	# For the nftables firewall rule to work, make sure you set:
-	# SAVE_ON_STOP="no"
-	# in: /etc/conf.d/nftables
-	if [ "${IFACE}" == "wg0" ];
-	then
-		# set a firewall mark for all wireguard packets
-		wg set wg0 fwmark 334455 || exit 1
-		
-		# route all packets to the wg0 interface in table 2468
-		ip route add default dev wg0 table 2468 || exit 1
-		
-		# if packet doesn't have the wireguard firewall mark,
-		# send it to table 2468
-		ip rule add not fwmark 334455 table 2468 || exit 1
-		
-		# if packet isn't going out the wg0 interface, doesn't have
-		# the wireguard firewall mark and isn't broadcast or multicast
-		# reject it (don't drop it like there's no connection)
-		nft add table ip filter
-		nft add chain ip filter output
-		nft insert rule ip filter output oifname!="wg0" mark!=334455 fib daddr type!=local counter reject || exit 1
-		
-		# Make sure only DNS server is the one from your provider or
-		# a custom one fitting your needs!
-		# If there is one, otherwise you can remove this line.
-		echo "nameserver 103.86.96.100" > /etc/resolv.conf || exit 1
-		echo "nameserver 103.86.99.100" >> /etc/resolv.conf || exit 1
-	fi
-	return 0
-}
-
 predown() {
 	# Prevent bringing down interface in case there's a NFS root.
 	# taken from: https://github.com/gentoo/netifrc/blob/4bd8be5f43d07a9e92b73174c7fbef8b989aaa55/doc/net.example.Linux.in
@@ -60,27 +21,5 @@ predown() {
 		eerror "root filesystem is network mounted -- can't stop ${IFACE}"
 		return 1
 	fi
-
-	# When bringing down the interface using rc-service, make sure that all
-	# rules specific to isolating the wireguard connections are gone, so
-	# that normal connections can work again.
-	# Change the DNS values for your setup!
-	if [ "${IFACE}" == "wg0" ];
-	then
-		# Bringing back default nftables rules.
-		rc-service nftables reload || exit 1
-
-		# Removing wireguard specific routing rules.
-		ip route del default dev wg0 table 2468 || exit 1
-		ip rule del not fwmark 334455 table 2468 || exit 1
-
-		# Bringing back your own DNS settings, in case they were
-		# changed in postup()
-		rc-service dhcpcd stop
-		rc-service dhcpcd start
-		#echo "nameserver 1.2.3.4" > /etc/resolv.conf || exit 1
-		#echo "nameserver 123.12.21.1" >> /etc/resolv.conf || exit 1
-	fi
-	return 0
 }
 
