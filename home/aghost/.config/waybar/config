@@ -30,23 +30,23 @@
       			"default": ""
 		}
 	},
-  "sway/mode": {
-    "format": "<span style=\"italic\">{}</span>"
-  },
-  "tray": {
-    "spacing": 10
-  },
-  "clock": {
-    "format": "{:%Y-%m-%d %H:%M}"
-  },
-  "cpu": {
-    "format": "{usage}% ",
-    "on-click": "alacritty -e htop"
-  },
-  "memory": {
-    "format": "{}% ",
-    "on-click": "alacritty -e htop"
-  },
+	"sway/mode": {
+		"format": "<span style=\"italic\">{}</span>"
+	},
+	"tray": {
+		"spacing": 10
+	},
+	"clock": {
+		"format": "{:%Y-%m-%d %H:%M}"
+	},
+	"cpu": {
+		"format": "{usage}% ",
+		"on-click": "foot -e htop"
+	},
+	"memory": {
+		"format": "{}% ",
+		"on-click": "foot -e htop"
+	},
 	"wireplumber": {
 		"format": "  {volume}% {icon} ",
 		"format-muted": "  󰝟 ",
@@ -69,6 +69,7 @@
 		"format-disabled": "󰅛",
 		"tooltip-format-ethernet": "Interface: Ethernet\nInterface Name: {ifname}\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
 		"tooltip-format-wifi": "Interface: Wireless\nSSID: {essid}\nSignal Strength: {signalStrength}%\nFrequency: {frequency}GHz\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
+		"exec": "$HOME/.config/waybar/modules/network.sh",
 		"on-click": "$HOME/.config/waybar/modules/wofi-network.sh"
 	},
 	"custom/bluetooth": {
@@ -80,6 +81,7 @@
 		"tooltip-format": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {num_connections}",
 		"tooltip-format-enumerate-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {device_enumerate}",
 		"tooltip-format-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevice:\n\tAlias: {device_alias}\n\tAddress: {device_address}",
+		"exec": "$HOME/.config/waybar/modules/bluetooth.sh",
 		"on-click": "$HOME/.config/waybar/modules/wofi-bluetooth.sh"
 	},
 	"custom/vpn": {
@@ -91,8 +93,8 @@
 		},
 		"return-type": "json",
 		"interval": 10,
-		"exec": "$HOME/.config/waybar/modules/nordvpn-rc.sh",
-		"on-click": "$HOME/.config/waybar/modules/wofi-nordvpn-rc.sh"
+		"exec": "$HOME/.config/waybar/modules/vpn.sh",
+		"on-click": "$HOME/.config/waybar/modules/wofi-vpn.sh"
 	}
 }
 

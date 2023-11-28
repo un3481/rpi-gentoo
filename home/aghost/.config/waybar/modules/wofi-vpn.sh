@@ -16,7 +16,7 @@ echoexit() {
 
 # checking dependencies:
 whereis wofi > /dev/null || echoexit "'wofi' not found."
-whereis nordvpn-rc > /dev/null || echoexit "'nordvpn-rc' not found."
+whereis nordvpn > /dev/null || echoexit "'nordvpn' not found."
 
 # constants
 TMPDIR="/tmp"
@@ -28,7 +28,7 @@ MENU_CMD="wofi --dmenu --location=3 --cache-file=/tmp/wofi-dump-cache"
 # Show vpn status.
 status_menu() {
     local options selected close
-    options="$(sudo nordvpn-rc --nocolor gs | )"
+    options="$(nordvpn status | tr -d '\r-' | sed 's/^ *//')"
     options="$options\nback"
 
     # launch wofi and select option
@@ -182,32 +182,41 @@ countries_cities_menu() {
 
 # nordvpn connect options
 connect_menu() {
-	local options selected close
-	options="recommended\nother\nback"
+    local options selected close
+    options="default\ncountries\ncities\np2p\nonion\nback"
 
-	# launch wofi and select option
-	selected=$(printf %b "$options" | $MENU_CMD -p "Connect" --x=-320 --width=140 --height=260)
+    # launch wofi and select option
+    selected=$(printf %b "$options" | $MENU_CMD -p "Connect" --x=-320 --width=140 --height=260)
 
-	# do not keep cache
+    # do not keep cache
 	rm $CACHE_FILE
 
-	# match selected option to command
-	case $selected in
-        	"")
+    # match selected option to command
+    case $selected in
+        "")
 			exit 0
-            		;;
+            ;;
 		"back")
 			close="1"
-	        	;;
-        	"recommended")
-            		location_menu "recommended"
-            		;;
-        	"other")
-			location_menu "other"
-            		;;
-        	*)
-            		;;
-	esac
+	        ;;
+        "default")
+            nordvpn connect
+            ;;
+        "countries")
+            countries_menu
+            ;;
+        "cities")
+            countries_cities_menu
+            ;;
+        "p2p")
+            nordvpn connect p2p
+            ;;
+        "onion")
+            nordvpn connect onion_over_vpn
+            ;;
+        *)
+            ;;
+    esac
 
 	if [[ "$close" == "" ]]; then
 		connect_menu
