@@ -32,7 +32,7 @@ waybar_json() {
 	local status tooltip conn_on conn_off
 
 	# get status
-	status=$(sudo nordvpn-rc --nocolor gs) || exit $?
+	status=$(sudo nordvpn-rc --nocolor gs) || status="status: disconnected"
 	tooltip=$(printf %s "$status" | tail -13 | sed -z 's/\n/\\n/g')
 
 	conn_on=$(printf %s "$status" | grep -m 1 "^status: connected$")

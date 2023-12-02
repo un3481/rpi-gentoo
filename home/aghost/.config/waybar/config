@@ -9,8 +9,8 @@
 		"custom/vpn",
 		"custom/network",
 		"custom/bluetooth",
-	  	"wireplumber",
-	  	"cpu",
+		"wireplumber",
+		"cpu",
 		"memory",
 		"clock"
 	],
@@ -27,7 +27,7 @@
 			"6:docs": "",
 			"urgent": "",
 			"focused": "",
-      			"default": ""
+			"default": ""
 		}
 	},
 	"sway/mode": {
@@ -48,8 +48,8 @@
 		"on-click": "foot -e htop"
 	},
 	"wireplumber": {
-		"format": "  {volume}% {icon} ",
-		"format-muted": "  󰝟 ",
+		"format": "{volume}% {icon}",
+		"format-muted": "󰝟",
 		"format-icons": {
 			"headphones": "",
 			"handsfree": "",
@@ -62,30 +62,35 @@
 		"on-click": "helvum"
 	},
 	"custom/network": {
-		"format": "󰛵",
-		"format-wifi": "",
-		"format-ethernet": "󰱓",
-		"format-disconnected": "󰲛",
-		"format-disabled": "󰅛",
-		"tooltip-format-ethernet": "Interface: Ethernet\nInterface Name: {ifname}\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
-		"tooltip-format-wifi": "Interface: Wireless\nSSID: {essid}\nSignal Strength: {signalStrength}%\nFrequency: {frequency}GHz\nBandwidth: {bandwidthUpBytes} Upload, {bandwidthDownBytes} Download\nIP: {ipaddr}/{cidr}\nSubnet Mask: {netmask}\nDefault Gateway: {gwaddr}",
+		"format": "{icon}",
+		"format-icons": {
+			"wireless": "",
+			"wired": "󰱓",
+			"disconnected": "󰲛",
+			"disabled": "󰅛",
+			"unknown": "󰛵"
+		},
+		"return-type": "json",
+		"interval": 10,
 		"exec": "$HOME/.config/waybar/modules/network.sh",
-		"on-click": "$HOME/.config/waybar/modules/wofi-network.sh"
+		"on-click": "$HOME/.config/waybar/modules/wofi-network.sh",
+		"spacing": 10
 	},
 	"custom/bluetooth": {
-		"format": "  {status} 󰂯 ",
-		"format-on": "  󰂯 ",
-		"format-off": "  󰂲 ",
-		"format-disabled": "  󰂲 ",
-		"format-connected": "  Connected ({num_connections}) 󰂱 ",
-		"tooltip-format": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {num_connections}",
-		"tooltip-format-enumerate-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevices: {device_enumerate}",
-		"tooltip-format-connected": "Status: {status}\nController:\n\tAlias: {controller_alias}\n\tAddress: {controller_address}\nDevice:\n\tAlias: {device_alias}\n\tAddress: {device_address}",
+		"format": "{icon}",
+		"format-icons": {
+			"on": "󰂯",
+			"off": "󰂲",
+			"disabled": "󰂲",
+			"connected": "Connected ({num_connections}) 󰂱"
+		},
+		"return-type": "json",
+		"interval": 10,
 		"exec": "$HOME/.config/waybar/modules/bluetooth.sh",
 		"on-click": "$HOME/.config/waybar/modules/wofi-bluetooth.sh"
 	},
 	"custom/vpn": {
-		"format": "  {} {icon} ",
+		"format": "{} {icon}",
 		"format-icons": {
 			"connected": "󰒄",
 			"disconnected": "󰩠",
