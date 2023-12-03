@@ -14,6 +14,7 @@ echoexit() {
 
 # Checking dependencies:
 whereis rc-service > /dev/null || echoexit "'rc-service' not found."
+whereis bc > /dev/null || echoexit "'bc' not found."
 
 trim_whitespaces() {
         local text
@@ -114,17 +115,47 @@ waybar_json() {
 	
 	# wireless tooltip
 	if [[ "$if_type" == "wireless" ]]; then
+		local wpa_status if_wpa if_con_freq if_con_ssid
+
+		# get wpa_supplicant data
+		wpa_status=$(sudo wpa_cli status)
+		
+		# get wpa_supplicant interface
+		if_wpa=$(printf "$wpa_status" | grep "^Selected interface " | sed "s/^Selected interface //g" | sed "s/'//g")
+		
+		# check wpa_supplicant interface
+		if [[ "$interface" != "$if_wpa" ]]; then
+			printf "%s\n" "{\"text\":\"Unknown\",\"tooltip\":\"Unknown interface.\",\"class\":\"unknown\",\"alt\":\"unknown\"}"
+			exit 0
+		fi
+		
+		# extract wireless ssid
+		if_con_ssid=$(printf "$wpa_status" | grep "^ssid=" | sed "s/^ssid\=//g")
+
+		# extract wireless frequency
+		if_con_freq=$(printf "$wpa_status" | grep "^freq=" | sed "s/^freq\=//g")
+
+		# wireless tooltip
 		tooltip+="\n  ssid: $if_con_ssid"
-		tooltip+="\n  strength: $if_con_strength"
-		tooltip+="\n  freq: $if_con_freq"
+		tooltip+="\n  freq: $if_con_freq MHz"
 	fi
+
+	local if_netmask if_gateway
 	
+	# get netmask
+	if_netmask=$(ifconfig "$interface" | grep " netmask " | sed "s/netmask/:/g" | sed "s/broadcast/:/g" | cut -d ":" -f 2 | trim_whitespaces)
+
+	# get gateway if existent
+	if [[ "$interface" == "$if_route" ]]; then
+		if_gateway=$(route | grep '^default' | awk '{ printf $2 }')
+	fi
+
 	# common tooltip
 	tooltip+="\n  bandwidth: $if_bandwidth"
 	tooltip+="\n  ip: $if_ip"
-	tooltip+="\n  mask: $if_netmask"
+	tooltip+="\n  netmask: $if_netmask"
 	tooltip+="\n  gateway: $if_gateway"
-
+	
 	# if type wireless
 	if [[ "$if_type" == "wireless" ]]; then
 		printf "%s\n" "{\"text\":\"Connected WiFi\",\"tooltip\":\"$tooltip\",\"class\":\"wireless\",\"alt\":\"wireless\"}"
