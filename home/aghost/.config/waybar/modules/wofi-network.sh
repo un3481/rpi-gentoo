@@ -274,73 +274,124 @@ connection_menu() {
 	fi
 }
 
-# opens a wofi menu with current interface status and options to connect
-interface_menu() {
-	local options selected close interface interface_info connections
+get_conn_status() {
+	local interface if_conn
 	interface=$1
 
-	# get interface info
-	interface_info=$(nmcli device show "$interface")
-
-	local interface_name interface_type interface_mac interface_state
-	interface_name=$(get_show_property "$interface_info" "GENERAL.DEVICE:")
-	interface_type=$(get_show_property "$interface_info" "GENERAL.TYPE:")
-	interface_mac=$(get_show_property "$interface_info" "GENERAL.HWADDR:")
-	interface_state=$(get_show_property "$interface_info" "GENERAL.STATE:")
+	# check con status
+	if_conn=$(cat "/sys/class/net/$interface/carrier" 2>/dev/null || printf "0")
 	
+	# return status
+	if (( $if_conn > 0 )); then
+		printf "connected"
+	else
+		printf "disconnected"
+	fi
+}
+
+get_rf_status() {
+	local interface if_rfkill_index if_rfkill_blocked
+	interface=$1
+
+	# get rfkiill data
+	if_rfkill_index=$(cat "/sys/class/net/$interface/device/ieee80211/*/rfkill1/index" 2>/dev/null)
+	if_rfkill_blocked=$(rfkill list $if_rfkill_index | grep "Soft blocked\|Hard blocked" | grep -c "yes")
+	
+	# return status
+	if (( $if_rfkill_blocked > 0 )); then
+		printf "disabled"
+	else
+		printf "enabled"
+	fi
+}
+
+# opens a wofi menu with current interface status and options to connect
+interface_menu() {
+	local options selected close interface networks
+	interface=$1
+
+	local if_type if_status if_dev if_driver if_addr if_conn
+
+	# get interface info
+	if_type=$(get_if_type "$interface")
+	if_status=$(get_if_status "$interface")
+	if_dev=$(cat "/sys/class/net/$interface/uevent" 2>/dev/null | grep "^DEVTYPE=" | sed "s/^DEVTYPE=//g")
+	if_driver=$(cat "/sys/class/net/$interface/device/uevent" 2>/dev/null | grep "^DRIVER=" | sed "s/^DRIVER=//g")
+	if_addr=$(cat "/sys/class/net/$interface/address" 2>/dev/null)
+	if_conn=$(get_conn_status "$interface")
+	
+	if [[ "$if_status" == "down" ]]; then
+		if_conn="disabled"
+	fi
+
 	# get menu options
-	options="$interface_name:"
-	options="$options\n\ttype: $interface_type"
-	options="$options\n\tMAC: $interface_mac"
-	options="$options\n\tstate: $interface_state"
+	options="$interface:"
+	[[ "$if_type" == "" ]] || options+="\n    type: $if_type"
+	[[ "$if_dev" == "" ]] || [[ "$if_type" == "wireless" ]] || options+="\n    dev: $if_dev"
+	[[ "$if_driver" == "" ]] || options+="\n    driver: $if_driver"
+	[[ "$if_addr" == "" ]] || options+="\n    address: $if_addr"
+	[[ "$if_conn" == "" ]] || options+="\n    status: $if_conn"
 	
 	# get wifi options
-	if [[ "$interface_type" == *"wifi"* ]]; then
-		local radio_state
-		radio_state=$(nmcli radio wifi)
+	if [[ "$if_type" == "wireless" ]]; then
+		local if_rf_status
 
-		if [[ "$radio_state" == *"enabled"* ]]; then
-			local wifi_list
+		# get rfkill status
+		if_rf_status=$(get_rf_status "$interface")
+		
+		if [[ "$if_rf_status" != "enabled" ]]; then
+			options+="\n    error: radio disabled"
+		fi
+		
+		# get connected options
+		if [[ "$if_status" == "up" ]]; then
+			local wpa_status active_ssid wpa_scan_results
 
 			# get local wifi list
-			options="$options\nnetworks:"
+			options+="\nnetworks:"
 
-			wifi_list=$(nmcli -g "IN-USE,SSID,BARS" device wifi list ifname "$interface" --rescan no)
-			connections=()
-			IFS=$'\n' read -rd '' -a connections <<< "$(printf %s "$wifi_list" | cut -d ":" -f 2)"
-			wifi_list=$(printf %s "$wifi_list" | sed "s/\:/\t/g")
-			
-			if [[ -n "$wifi_list" ]]; then
-				options="$options\n$wifi_list"
-			fi
+			# get wpa_supplicant status
+			wpa_status=$(sudo wpa_cli status)
+		
+			# extract wireless ssid
+			active_ssid=$(printf "$wpa_status" | grep "^ssid=" | sed "s/^ssid\=//g")
+
+			# get wpa_supplicant scan results
+			wpa_scan_results=$(sudo wpa_cli scan_results | tail -n +3)
+
+			networks=()
+			IFS=$'\n' read -rd '' -a networks <<< "$(printf "$wpa_scan_results")"
+			for i in "${networks[@]}"; do
+				local network ssid is_active
+				network=$i
+
+				# get ssid from results
+				ssid=$(printf "$network" | awk -F '\t' '{ print $5 }')
+
+				# mark active ssid
+				is_active=""
+				if [[ "$ssid" == "$active_ssid" ]]; then
+					is_active="  <<"
+				fi
+
+				options+="\n    ${ssid}${is_active}"
+			done
 
 			# add wifi options
 			options="$options\nscan"
 
 			# get connected options
-			if [[ "$interface_state" == *"100 ("* ]]; then
+			if [[ "$if_conn" == "connected" ]]; then
 				options="$options\ndisconnect"
 				options="$options\nshow password"
 			else
-				options="$options\nconnect default"
+				options="$options\nconnect"
 			fi
 
-			options="$options\nturn off"
+			options="$options\nsaved connections"
+			options="$options\ndisable"
 		else
-			options="$options\nturn on"
-		fi
-
-		options="$options\nsaved connections"
-	else
-		# get connected options
-		if [[ "$interface_state" == *"100 ("* ]]; then
-			local interface_connection interface_ip interface_gateway
-			interface_connection=$(get_show_property "$interface_info" "GENERAL.CONNECTION:")
-
-			options="$options\nconnection: $interface_connection"
-			options="$options\ndisconnect"
-		else
-			options="$options\nconnect"
+			options="$options\nenable"
 		fi
 	fi
 
@@ -356,24 +407,18 @@ interface_menu() {
 	case $selected in
 		"")
 			exit 0
-      ;;
+			;;
 		"back")
 			close="1"
-	    ;;
-	 	"connect" | "connect default")
+			;;
+	 	"connect")
 			nmcli device connect "$interface"
 			;;
 		"disconnect")
 			nmcli device disconnect "$interface"
 			;;
-		"turn on")
-			nmcli radio wifi on
-			;;
-		"turn off")
-			nmcli radio wifi off
-			;;
 		"scan")
-			nmcli device wifi rescan ifname "$interface"
+			sudo wpa_cli scan
 			;;
 		"show password")
 			secret_menu "$interface" ""
@@ -381,20 +426,27 @@ interface_menu() {
 		"saved connections")
 			saved_connections_menu "$interface"
 			;;
-	  *)
+		"disable")
+			wofi_password | sudo -S rc-service "net.$interface" stop
+			;;
+		"enable")
+			wofi_password | sudo -S rc-service "net.$interface" start
+			;;
+		*)
 			local connection ssid
-			ssid=$(printf %s "$selected" | sed "s/\t/\:/g" | cut -d ":" -f 2 | sed "s/\*//g" | trim_whitespaces)
-			for i in "${connections[@]}"; do
-				local conn
-				conn=$(printf %s "$i" | trim_whitespaces)
-				if [[ "$ssid" == "$conn" ]]; then
+			ssid=$(printf %s "$selected" | sed "s/    //g" | sed "s/  <<//g")
+			for i in "${networks[@]}"; do
+				local conn_iter
+				conn_iter=$(printf "$i" | awk -F '\t' '{ print $5 }')
+				if [[ "$ssid" == "$conn_iter" ]]; then
 					connection="$ssid"
 				fi
 			done
-			if [[ -n "$connection" ]]; then
+			if [[ "$connection" != "" ]]; then
+				printf "$connection"
 				connection_menu "$interface" "$connection"
 			fi
-	    ;;
+			;;
 	esac
 
 	if [[ "$close" == "" ]]; then
@@ -402,57 +454,82 @@ interface_menu() {
 	fi
 }
 
+get_if_list() {
+	ls "/etc/init.d/" | grep "^net\." | grep -v "^net\.lo$" | sed "s/^net\.//g"
+}
+
+get_if_type() {
+	local interface if_type is_wired is_wireless is_virtual
+	interface=$1
+
+	# default interface type
+	if_type="unknown"	
+	
+	# check if interface is wired
+	is_wired=$(cat "/sys/class/net/$interface/phydev/uevent" 2>/dev/null | grep -c "ethernet")
+	if (( $is_wired > 0 )); then
+		if_type="wired"
+        fi
+
+       	# check if interface is wireless
+        is_wireless=$(ls /sys/class/ieee80211/*/device/net/ | grep -c "^$interface$")
+        if (( $is_wireless > 0 )); then
+		if_type="wireless"
+        fi
+
+	# check if interface is virtual
+	is_virtual=$(ls -l "/sys/class/net" | grep " $interface -> " | grep -c "/devices/virtual/net/$interface$")
+	if (( $is_virtual > 0 )); then
+		if_type="virtual"
+        fi
+
+	# return type
+	printf "$if_type"
+}
+
+get_if_status() {
+	local interface is_up
+	interface=$1
+
+	# check interface status
+	is_up=$(rc-service "net.$interface" status | grep -c "started$")
+	if (( $is_up > 0 )); then
+		printf "up"
+	else
+		printf "down"
+	fi
+}
+
 # opens a wofi menu with current network status and options to connect
 network_menu() {
 	local options selected close interfaces networking_state 
 
-	networking_state=$(nmcli networking)
-	
-	if [[ "$networking_state" == "enabled" ]]; then
-		local interfaces_array interfaces_status
+	local interfaces_array interfaces_status
 
-		interfaces_array=()
-		interfaces_status=$(nmcli device status)
-		IFS=$'\n' read -rd '' -a interfaces_array <<< "$interfaces_status"
+		# get all interfaces
+        	if_all=$(get_if_list)
+		if_array=()
+		IFS=$'\n' read -rd '' -a if_array <<< "$if_all"
 
-		options="$options\ninterfaces:"
+		options="interfaces:"
 
-		for i in "${interfaces_array[@]}"; do
-			local interface_name interface_type interface_state interface_connection
+		for i in "${if_array[@]}"; do
+			local interface if_type if_status
+			interface=$i
 
-			interface_name=$(printf %b "$i" | awk '{print $1}')
-			interface_type=$(printf %b "$i" | awk '{print $2}')
+			# get interface type
+			if_type=$(get_if_type "$interface")
 
-			if [[ "$interface_type" == "TYPE"     ]] || \
-			    [[ "$interface_type" == "loopback" ]] || \
-			    [[ "$interface_type" == "wifi-p2p" ]]; then
-				continue
-			fi
+			# check if interface is active
+			if_status=$(get_if_status "$interface")
 
-			local sp ss ep es
-			sp=${interfaces_array[0]%%"STATE"*}
-			ss=${#sp}
-			ep=${interfaces_array[0]%%"CONNECTION"*}
-			es=${#ep}
-			interface_state=${i:ss:((es - ss))}
-			interface_state="$(trim_whitespaces "$interface_state")"
-
-			interface_connection=$(printf %b "$i" | sed "s/$interface_state/\:/g" | cut -d ":" -f 2 | trim_whitespaces)
-
-			options="$options\n\t$interface_name: $interface_connection"
-			interfaces="$interfaces\n$interface_name"
+			options+="\n    $interface: $if_type [$if_status]"
 		done
-	
-		options="$options\nturn off"
-	else
-		options="${options}\nturn on"
-	fi
 
-	options="$options\nopen connection editor\nexit"
-	options="${options:2}"
+	options+="\nexit"
 
 	# launch wofi and select option
-	selected="$(printf %b "$options" | $MENU_CMD -p "Network" --width=240 --height=260)"
+	selected="$(printf "$options" | $MENU_CMD -p "Network" --width=240 --height=260)"
 
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -461,24 +538,15 @@ network_menu() {
 	case $selected in
 		"")
 			exit 0
-      ;;
+			;;
 		"exit")
 			close="1"
-	    ;;
-	 	"turn on")
-	    nmcli networking on
-	    ;;
-	  "turn off")
-	    nmcli networking off
-	    ;;
-	  "open connection editor")
-	    nm-connection-editor &
-	    ;;
-	  *)
-			local interface interface_selected
-			interface_selected=$(printf %b "$selected" | cut -d ":" -f 1 | trim_whitespaces)
-			interface=$(printf %b "$interfaces" | grep "$interface_selected" -m 1)
-			if [[ -n "$interface" ]]; then
+			;;
+		*)
+			local interface if_selected
+			if_selected=$(printf "$selected" | cut -d ":" -f 1 | trim_whitespaces)
+			interface=$(printf "$if_all" | grep -m 1 "$if_selected")
+			if [[ "$interface" != "" ]]; then
 				interface_menu "$interface"
 			fi
 			;;
@@ -491,3 +559,4 @@ network_menu() {
 
 # main
 network_menu
+
