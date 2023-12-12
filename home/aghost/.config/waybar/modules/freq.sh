@@ -15,7 +15,7 @@ echoexit() {
 }
 
 # Checking dependencies:
-whereis nordvpn-rc > /dev/null || echoexit "'nordvpn-rc' not found."
+whereis bc > /dev/null || echoexit "'bc' not found."
 
 trim_whitespaces() {
         local text
@@ -29,7 +29,7 @@ trim_whitespaces() {
 
 # nordvpn waybar module json format
 waybar_json() {
-	local cpus cpus_array freq tooltip
+	local cpus cpus_array freq freq_c freq_d tooltip
 	
 	# get cpus
 	cpus=$(ls "/sys/devices/system/cpu" | grep "^cpu" | grep -v "cpufreq" | grep -v "cpuidle")
@@ -44,35 +44,36 @@ waybar_json() {
 
 		# get cpu frequency
 		freq_iter=$(sudo cat "/sys/devices/system/cpu/${cpu}/cpufreq/cpuinfo_cur_freq")
-		freq_iter=$(( $freq_iter / 1000 ))
+		freq_iter=$(printf "%s\n" "scale=1; $freq_iter/1000000" | bc -l)
 
 		# add info to tooltip
-		tooltip+="\n${cpu}: ${freq_iter}MHz"
+		tooltip+="\n${cpu}: ${freq_iter}GHz"
 
 		# add frequecy to average
-		freq=$(( $freq + $freq_iter ))
+		freq=$(printf "%s\n" "scale=1; $freq + $freq_iter" | bc -l)
 	done
 
 	# calc average
-	freq=$(( $freq / ${#cpus_array[@]} ))
+	freq=$(printf "%s\n" "scale=3; $freq / ${#cpus_array[@]}" | bc -l)
 
 	# add average to tooltip
-	tooltip="Total: ${freq}MHz${tooltip}"
+	tooltip="Avg: ${freq}GHz${tooltip}"
 
 	# get level
-	if (( $freq > 1800 )); then
+	freq_c=$(printf "%s\n" "scale=1; $freq * 1000" | bc -l | cut -d "." -f 1)
+	if (( $freq_c > 1800 )); then
 		level="high"
-	elif (( $freq >= 1400 )); then
+	elif (( $freq_c >= 1400 )); then
 		level="medium"
-	elif (( $freq < 1400 )); then
+	elif (( $freq_c < 1400 )); then
 		level="low"
 	fi
 
-	# change to GHz
-	freq=$(printf "%s\n" "scale=1; $freq/1000" | bc -l)
+	# round to 1
+	freq_d=$(printf '%.*f\n' 1 "$freq")
 
 	# return result
-	printf "%s\n" "{\"text\":\"${freq}GHz\",\"tooltip\":\"$tooltip\",\"class\":\"$level\",\"alt\":\"$level\"}"
+	printf "%s\n" "{\"text\":\"${freq_d}GHz\",\"tooltip\":\"$tooltip\",\"class\":\"$level\",\"alt\":\"$level\"}"
 }
 
 # main
