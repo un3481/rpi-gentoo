@@ -10,8 +10,9 @@
 		"custom/network",
 		"custom/bluetooth",
 		"wireplumber",
-		"cpu",
 		"memory",
+		"cpu",
+		"custom/temp",
 		"clock"
 	],
 	"sway/workspaces": {
@@ -61,6 +62,19 @@
 		},
 		"on-click": "helvum"
 	},
+	"custom/temp": {
+		"format": "{} {icon}",
+		"format-icons": {
+			"very-low": "",
+			"low": "",
+			"normal": "",
+			"high": "",
+			"very-high": ""
+		},
+		"return-type": "json",
+		"interval": 10,
+		"exec": "$HOME/.config/waybar/modules/temp.sh"
+	},
 	"custom/network": {
 		"format": "{icon}",
 		"format-icons": {
@@ -73,8 +87,7 @@
 		"return-type": "json",
 		"interval": 10,
 		"exec": "$HOME/.config/waybar/modules/network.sh",
-		"on-click": "$HOME/.config/waybar/modules/wofi-network.sh",
-		"spacing": 10
+		"on-click": "$HOME/.config/waybar/modules/wofi-network.sh"
 	},
 	"custom/bluetooth": {
 		"format": "{icon}",
