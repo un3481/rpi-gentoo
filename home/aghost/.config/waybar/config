@@ -12,6 +12,7 @@
 		"wireplumber",
 		"memory",
 		"cpu",
+		"custom/freq",
 		"custom/temp",
 		"clock"
 	],
@@ -74,6 +75,17 @@
 		"return-type": "json",
 		"interval": 10,
 		"exec": "$HOME/.config/waybar/modules/temp.sh"
+	},
+	"custom/freq": {
+		"format": "{} {icon}",
+		"format-icons": {
+			"low": "󰾆",
+			"medium": "󰾅",
+			"high": "󰓅"
+		},
+		"return-type": "json",
+		"interval": 10,
+		"exec": "$HOME/.config/waybar/modules/freq.sh"
 	},
 	"custom/network": {
 		"format": "{icon}",

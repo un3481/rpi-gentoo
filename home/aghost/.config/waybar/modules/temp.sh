@@ -56,7 +56,7 @@ waybar_json() {
 	fi
 
 	# return result
-	printf "%s\n" "{\"text\":\"$temp_int°C\",\"tooltip\":\"$temp°C\",\"class\":\"$level\",\"alt\":\"$level\"}"
+	printf "%s\n" "{\"text\":\"${temp_int}°C\",\"tooltip\":\"${temp}°C\",\"class\":\"$level\",\"alt\":\"$level\"}"
 }
 
 # main

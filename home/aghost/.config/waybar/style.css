@@ -38,7 +38,7 @@ window#waybar {
     border-bottom: 3px solid white;
 }
 
-#clock, #cpu, #memory, #wireplumber, #custom-bluetooth, #custom-network, #custom-vpn, #tray, #mode {
+#clock, #custom-temp, #custom-freq, #cpu, #memory, #wireplumber, #custom-bluetooth, #custom-network, #custom-vpn, #tray, #mode {
     padding: 0 3px;
     margin: 0 2px;
 }
@@ -52,6 +52,16 @@ window#waybar {
         background-color: #ffffff;
         color: black;
     }
+}
+
+#custom-temp {
+}
+
+#custom-temp.very-high {
+    background: #f53c3c;
+}
+
+#custom-freq {
 }
 
 #cpu {

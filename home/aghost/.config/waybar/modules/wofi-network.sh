@@ -185,7 +185,7 @@ saved_connections_menu() {
 	fi
 }
 
-connection_menu() {
+network_menu() {
 	local options selected close interface connection connection_info
 	interface=$1
 	connection=$2
@@ -238,10 +238,10 @@ connection_menu() {
 	case $selected in
 		"")
 			exit 0
-      ;;
+			;;
 		"back")
 			close="1"
-	    ;;
+			;;
 		"connect")
 			nmcli connection up id "$connection"
 			;;
@@ -253,10 +253,8 @@ connection_menu() {
 			;;
 		"add connection")
 			local password
-
 			password=$(printf %b "\n" | $MENU_CMD -p "Enter Password" --password --width=240 --height=100)
 			if [[ -n "$password" ]]; then
-
 				nmcli connection add type wifi con-name "$connection" ssid "$connection" ifname "$interface"
 				nmcli connection modify "$connection" wifi-sec.key-mgmt wpa-psk
 				nmcli connection modify "$connection" wifi-sec.psk "$password"
@@ -265,12 +263,12 @@ connection_menu() {
 		"delete connection")
 			nmcli connection delete id "$connection"
 			;;
-	  *)
-	    ;;
+		*)
+			;;
 	esac
 
 	if [[ "$close" == "" ]]; then
-		connection_menu "$interface" "$connection"
+		network_menu "$interface" "$connection"
 	fi
 }
 
@@ -433,18 +431,17 @@ interface_menu() {
 			wofi_password | sudo -S rc-service "net.$interface" start
 			;;
 		*)
-			local connection ssid
+			local ssid network
 			ssid=$(printf %s "$selected" | sed "s/    //g" | sed "s/  <<//g")
 			for i in "${networks[@]}"; do
-				local conn_iter
-				conn_iter=$(printf "$i" | awk -F '\t' '{ print $5 }')
-				if [[ "$ssid" == "$conn_iter" ]]; then
-					connection="$ssid"
+				local net_iter
+				net_iter=$(printf "$i" | awk -F '\t' '{ print $5 }')
+				if [[ "$net_iter" == "$ssid" ]]; then
+					network="$ssid"
 				fi
 			done
-			if [[ "$connection" != "" ]]; then
-				printf "$connection"
-				connection_menu "$interface" "$connection"
+			if [[ "$network" != "" ]]; then
+				network_menu "$interface" "$network"
 			fi
 			;;
 	esac
@@ -501,7 +498,7 @@ get_if_status() {
 }
 
 # opens a wofi menu with current network status and options to connect
-network_menu() {
+base_menu() {
 	local options selected close interfaces networking_state 
 
 	local interfaces_array interfaces_status
