@@ -39,7 +39,8 @@
 		"spacing": 10
 	},
 	"clock": {
-		"format": "{:%Y-%m-%d %H:%M}"
+		"format": "{:%A, %B %d, %Y - %H:%M}",
+        	"tooltip-format": "<tt>{calendar}</tt>"
 	},
 	"cpu": {
 		"format": "{usage}% ",

@@ -67,11 +67,9 @@ qrcode_display() {
 	# generate qrcode image in tmp folder
 	qrencode -t png -o "$image_file" -l H -s 25 -m 2 --dpi=192 "$text"
 	
-	# find monitor resolution and calculate image position
-	local wl_output_mode display_width xpos
-	wl_output_mode=$(wayland-info --interface "wl_output" | grep "width:" | grep "height:" | grep "refresh:")
-	display_width=$(printf %s "$wl_output_mode" | cut -d ":" -f 2 | trim_whitespaces | cut -d " " -f 1)
-	xpos=$(( $display_width - 420 ))
+	# image position
+	local xpos
+	xpos=1800
 
 	# launch swayimg at specified position
 	swayimg "$image_file" --geometry="$xpos,24,240,240"

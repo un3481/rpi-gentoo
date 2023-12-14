@@ -54,7 +54,7 @@ waybar_json() {
 	done
 
 	# calc average
-	freq=$(printf "%s\n" "scale=3; $freq / ${#cpus_array[@]}" | bc -l)
+	freq=$(printf "%s\n" "scale=1; $freq / ${#cpus_array[@]}" | bc -l)
 
 	# add average to tooltip
 	tooltip="Avg: ${freq}GHz${tooltip}"
