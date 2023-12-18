@@ -90,24 +90,34 @@ secret_menu() {
 	fi
 }
 
-saved_connections_menu() {
-	local options selected close interface interface_info interface_type
+saved_networks_menu() {
+	local options selected close interface wpa_networks
 	interface=$1
 
-	interface_info=$(nmcli device show "$interface")
-	interface_type=$(get_show_property "$interface_info" "GENERAL.TYPE:")
+	options="networks:"
+	
+	# get wpa supplicant networks
+	wpa_list_networks=$(sudo wpa_cli list_networks | tail -n +3)
 
-	connections=$(\
-		nmcli -g "NAME" connection show \
-		| cut -d ":" -f 1 \
-		| sed "s/^/\t/g" \
-	)
+	networks=()
+	IFS=$'\n' read -rd '' -a networks <<< "$(printf "$wpa_list_networks")"
+	for i in "${networks[@]}"; do
+		local network ssid is_active
+		network=$i
 
-	options="connections:"
-	if [[ -n $connections ]]; then
-		options+="\n$connections"
-	fi
-	options="$options\nadd connection\nback"
+		# get ssid from results
+		ssid=$(printf "$network" | awk -F '\t' '{ print $2 }')
+
+		# mark active ssid
+		is_active="$(printf "$network" | sed "s/\t/#@:/g" | grep -o "#@:\[CURRENT\]$")"
+		if [[ $is_active != "" ]]; then
+			is_active="  <<"
+		fi
+
+		options+="\n    ${ssid}${is_active}"
+	done
+	
+	options+="\nadd network\nback"
 
 	# launch wofi and select option
 	selected=$(printf "$options" | $MENU_CMD -p "Saved Connections" --width=240 --height=300)
@@ -123,40 +133,74 @@ saved_connections_menu() {
 		"back")
 			close="1"
 			;;
-		"add connection")
-			local ssid password
-			ssid=$(printf "\n" | $MENU_CMD -p "Enter SSID" --width=240 --height=100)
-			if [[ -n "$ssid" ]]; then
-				password=$(printf "\n" | $MENU_CMD -p "Enter Password" --password --width=240 --height=100)
-				if [[ -n "$password" ]]; then
-					nmcli connection add type wifi con-name "$ssid" ssid "$ssid" ifname "$interface"
-					nmcli connection modify "$ssid" wifi-sec.key-mgmt wpa-psk
-					nmcli connection modify "$ssid" wifi-sec.psk "$password"
+		"add network")
+			local ssid
+			ssid=$(printf "\n" | $MENU_CMD -p "Enter WiFi SSID here." --width=240 --height=100)
+			if [[ "$ssid" != "" ]]; then
+				local password
+				password=$(printf "\n" | $MENU_CMD -p "Enter WiFi password here." --password --width=240 --height=100)
+				
+				local sudo_passwd
+				sudo_passwd="$(wofi_sudo)"
+				if [[ "$sudo_passwd" != "" ]]; then
+					add_network "$interface" "$ssid" "$password" "$sudo_passwd"
+					printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" save_config
 				fi
+				sudo_passwd=""
 			fi
 			;;
 		*)
-			local connection
-			connection=$(trim_whitespaces "$selected")
-			connection_menu "$interface" "$connection"
+			local ssid network
+			network=""
+			ssid=$(printf "$selected" | sed "s/^    //g" | sed "s/  <<$//g")
+			for i in "${networks[@]}"; do
+				local net_iter
+				net_iter=$(printf "$i" | awk -F '\t' '{ print $2 }')
+				if [[ "$net_iter" == "$ssid" ]]; then
+					network="$ssid"
+				fi
+			done
+			if [[ "$network" != "" ]]; then
+				wpa_network_menu "$interface" "$network"
+			fi			
 			;;
 	esac
 	
 	if [[ "$close" == "" ]]; then
-		saved_connections_menu "$interface"
+		saved_networks_menu "$interface"
 	fi
 }
 
-connection_menu() {
-	local options selected close interface connection if_type
+add_network() {
+	local interface ssid password sudo_passwd net_id
 	interface=$1
-	connection=$2
+	ssid=$2
+	password=$3
+	sudo_passwd=$4
+
+	# create network
+	net_id=$(printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" add_network)
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" ssid "\"$ssid\""
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" psk "\"$password\""
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" scan_ssid "1"
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" key_mgmt "WPA-PSK"
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" proto "RSN"
+	printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" disable_network "$net_id"
+
+	# return id
+	printf "$net_id"
+}
+
+wpa_network_menu() {
+	local options selected close interface network if_type
+	interface=$1
+	network=$2
 
 	# set options
-	options="connection:"
-	options+="\n    name: $connection"
+	options="network:"
+	options+="\n    name: $network"
 
-	# set connection type
+	# get network type
 	if_type=$(get_if_type "$interface")	
 	options+="\n    type: $if_type"
 
@@ -167,16 +211,16 @@ connection_menu() {
 		local bssid
 		
 		# get connection MAC address
-		bssid=$(sudo wpa_cli scan_results | sed "s/\t/#@:/g" | grep -m 1 "#@:$connection$" | cut -d "#" -f 1)
-		options+="\n    MAC: $bssid"
+		bssid=$(sudo wpa_cli scan_results | sed "s/\t/#@:/g" | grep -m 1 "#@:$network$" | cut -d "#" -f 1)
+		[[ "$bssid" == "" ]] || options+="\n    MAC: $bssid"
 
-		net_id=$(sudo wpa_cli list_networks | sed "s/\t/#@:/g" | grep -m 1 "#@:$connection#@:" | cut -d "#" -f 1)
+		net_id=$(sudo wpa_cli list_networks | sed "s/\t/#@:/g" | grep -m 1 "#@:$network#@:" | cut -d "#" -f 1)
 		if [[ "$net_id" == "" ]]; then
-			options+="\nadd connection"
+			options+="\nadd network"
 		else
 			local wpa_status active_ssid
 			
-			options+="\ndelete connection"
+			options+="\ndelete network"
 			options+="\nshow password"
 			
 			# get wpa_supplicant status
@@ -195,7 +239,7 @@ connection_menu() {
 	options+="\nback"
 
 	# launch wofi and select option
-	selected="$(printf "$options" | $MENU_CMD -p "$connection" --width=240 --height=260)"
+	selected="$(printf "$options" | $MENU_CMD -p "$network" --width=240 --height=260)"
 
 	# do not keep cache
 	rm "$CACHE_FILE"
@@ -220,7 +264,7 @@ connection_menu() {
 		"disconnect")
 			local sudo_passwd
 			sudo_passwd="$(wofi_sudo)"
-			if [[ "$sudo_passwd" != "" ]]; then			
+			if [[ "$sudo_passwd" != "" ]]; then
 				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" disable_network all
 				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" save_config
 			fi
@@ -230,30 +274,23 @@ connection_menu() {
 			local sudo_passwd
 			sudo_passwd="$(wofi_sudo)"
 			if [[ "$sudo_passwd" != "" ]]; then
-				secret_menu "$interface" "$connection" "$sudo_passwd"
+				secret_menu "$interface" "$network" "$sudo_passwd"
 			fi
 			sudo_passwd=""
 			;;
-		"add connection")
+		"add network")
+			local net_passwd
+			net_passwd=$(printf "\n" | $MENU_CMD -p "Enter WiFi password here." --password --width=240 --height=100)
+
 			local sudo_passwd
 			sudo_passwd="$(wofi_sudo)"
 			if [[ "$sudo_passwd" != "" ]]; then
-				local conn_passwd
-				# get password
-				conn_passwd=$(printf "\n" | $MENU_CMD -p "Enter network password here." --password --width=240 --height=100)
-				# set network
-				net_id=$(printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" add_network)
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" ssid "\"$connection\""
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" psk "\"$conn_passwd\""
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" scan_ssid "1"
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" key_mgmt "WPA-PSK"
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" set_network "$net_id" proto "RSN"
-				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" disable_network "$net_id"
+				add_network "$interface" "$network" "$net_passwd" "$sudo_passwd"
 				printf "$sudo_passwd" | sudo -S wpa_cli -i "$interface" save_config
 			fi
 			sudo_passwd=""
 			;;
-		"delete connection")
+		"delete network")
 			local sudo_passwd
 			sudo_passwd="$(wofi_sudo)"
 			if [[ "$sudo_passwd" != "" ]]; then
@@ -267,7 +304,7 @@ connection_menu() {
 	esac
 
 	if [[ "$close" == "" ]]; then
-		connection_menu "$interface" "$connection"
+		wpa_network_menu "$interface" "$network"
 	fi
 }
 
@@ -376,7 +413,7 @@ interface_menu() {
 
 			# add wifi options
 			options+="\nscan"
-			options+="\nsaved connections"
+			options+="\nsaved networks"
 			options+="\ndisable"
 		else
 			options+="\nenable"
@@ -402,8 +439,8 @@ interface_menu() {
 		"scan")
 			sudo wpa_cli scan	
 			;;
-		"saved connections")
-			saved_connections_menu "$interface"
+		"saved networks")
+			saved_networks_menu "$interface"
 			;;
 		"disable")
 			local sudo_passwd
@@ -416,17 +453,18 @@ interface_menu() {
 			printf "$sudo_passwd" | sudo -S rc-service "net.$interface" start
 			;;
 		*)
-			local ssid connection
-			ssid=$(printf %s "$selected" | sed "s/    //g" | sed "s/  <<//g")
+			local ssid network
+			network=""
+			ssid=$(printf "$selected" | sed "s/^    //g" | sed "s/  <<$//g")
 			for i in "${networks[@]}"; do
 				local net_iter
 				net_iter=$(printf "$i" | awk -F '\t' '{ print $5 }')
 				if [[ "$net_iter" == "$ssid" ]]; then
-					connection="$ssid"
+					network="$ssid"
 				fi
 			done
-			if [[ "$connection" != "" ]]; then
-				connection_menu "$interface" "$connection"
+			if [[ "$network" != "" ]]; then
+				wpa_network_menu "$interface" "$network"
 			fi
 			;;
 	esac
@@ -526,7 +564,7 @@ network_menu() {
 			;;
 		*)
 			local interface if_selected
-			if_selected=$(printf "$selected" | cut -d ":" -f 1 | trim_whitespaces)
+			if_selected=$(printf "$selected" | cut -d ":" -f 1 | sed "s/^    //g")
 			interface=$(printf "$if_all" | grep -m 1 "$if_selected")
 			if [[ "$interface" != "" ]]; then
 				interface_menu "$interface"
