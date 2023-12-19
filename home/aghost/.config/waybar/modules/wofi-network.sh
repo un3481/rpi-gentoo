@@ -377,7 +377,7 @@ interface_menu() {
 			options+="\n    error: radio disabled"
 		fi
 		
-		# get connected options
+		# get up options
 		if [[ "$if_status" == "up" ]]; then
 			local wpa_status active_ssid wpa_scan_results
 
@@ -414,12 +414,16 @@ interface_menu() {
 			# add wifi options
 			options+="\nscan"
 			options+="\nsaved networks"
-			options+="\ndisable"
-		else
-			options+="\nenable"
 		fi
 	fi
 
+	# get up options
+	if [[ "$if_status" == "up" ]]; then
+		options+="\ndisable"
+	else
+		options+="\nenable"
+	fi
+	
 	options+="\nback"
 
 	# launch wofi and select option
@@ -444,12 +448,12 @@ interface_menu() {
 			;;
 		"disable")
 			local sudo_passwd
-			sudo_passwd=$(wofi_password)
+			sudo_passwd=$(wofi_sudo)
 			printf "$sudo_passwd" | sudo -S rc-service "net.$interface" stop
 			;;
 		"enable")
 			local sudo_passwd
-			sudo_passwd=$(wofi_password)
+			sudo_passwd=$(wofi_sudo)
 			printf "$sudo_passwd" | sudo -S rc-service "net.$interface" start
 			;;
 		*)
