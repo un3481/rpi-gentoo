@@ -4,17 +4,16 @@
 # - Use only 3 cores.
 # This prevents "out of memory" issues in the current hardware (8GB ram).
 # Since each c++ compiler thread can use up to 2GB, 3 threads could only use 6GB max.
-dev-lang/ghc		notmpfs.conf j3.conf
-dev-lang/mono		notmpfs.conf j3.conf
-dev-lang/rust		notmpfs.conf j3.conf
-dev-lang/spidermonkey	notmpfs.conf j3.conf
-sys-devel/clang		notmpfs.conf j3.conf
-sys-devel/gcc		notmpfs.conf j3.conf
-sys-devel/llvm		notmpfs.conf j3.conf
-net-libs/nodejs		notmpfs.conf j3.conf
-app-office/libreoffice	notmpfs.conf j3.conf
-mail-client/thunderbird	notmpfs.conf j3.conf
-www-client/chromium	notmpfs.conf j3.conf
-www-client/firefox	notmpfs.conf j3.conf
-net-im/telegram-desktop	notmpfs.conf j3.conf
+dev-lang/ghc		j3.conf
+dev-lang/mono		j3.conf
+dev-lang/rust		j3.conf
+dev-lang/spidermonkey	j3.conf
+sys-devel/clang		j3.conf
+sys-devel/gcc		j3.conf
+sys-devel/llvm		j3.conf
+net-libs/nodejs		j3.conf
+app-office/libreoffice	j3.conf
+www-client/firefox	j3.conf
+mail-client/thunderbird	j3.conf
+net-im/telegram-desktop	j3.conf
 

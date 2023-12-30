@@ -1,0 +1,58 @@
+
+# enable arm64 testing versions of gcc
+sys-devel/gcc ~arm64
+
+# enable arm64 testing versions of glib
+dev-libs/glib ~arm64
+
+# enable arm64 testing versions of gdbus-codegen
+dev-util/gdbus-codegen ~arm64
+
+# enable arm64 testing versions of neovim
+app-editors/neovim ~arm64
+
+# enable arm64 testing versions of sway
+gui-wm/sway ~arm64
+
+# enable arm64 testing versions of waybar
+gui-apps/waybar ~arm64
+
+# enable arm64 testing versions of wofi
+gui-apps/wofi ~arm64
+
+# enable arm64 testing versions of swayimg
+media-gfx/swayimg ~arm64
+
+# enable arm64 testing versions of foot
+gui-apps/foot ~arm64
+
+# enable arm64 testing versions of nnn
+app-misc/nnn ~arm64
+
+# enable arm64 testing versions of pacmanfm
+x11-misc/pcmanfm ~arm64
+
+# enable arm64 testing versions of keepassxc
+app-admin/keepassxc ~arm64
+
+# enable arm64 testing versions of nextcloud-client
+net-misc/nextcloud-client ~arm64
+
+# enable arm64 testing versions of libreoffice
+app-office/libreoffice ~arm64
+
+# enable arm64 testing versions of firefox (this allows firefox:rapid installs)
+www-client/firefox ~arm64
+
+# enable arm64 testing versions of thunderbird
+mail-client/thunderbird ~arm64
+
+# enable arm64 testing versions of telegram-desktop
+net-im/telegram-desktop ~arm64
+
+# enable arm64 testing versions of palemoon
+www-client/palemoon ~arm64
+
+# enable arm64 testing versions of helvum
+media-sound/helvum ~arm64
+

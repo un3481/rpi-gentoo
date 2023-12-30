@@ -1,10 +1,13 @@
 
-# Compile mesa without llvm (mesa doesnt use llvm in aarch64)
-media-libs/mesa -llvm
+# Compile mesa with vulkan support
+media-libs/mesa vulkan
 
 # Use seatd without systemd or elogind (seatd is required by sway)
 sys-auth/seatd builtin server
 
 # Enable svg support for swaybg
 gui-apps/swaybg gdk-pixbuf
+
+# Enable grimshot in sway
+gui-wm/sway grimshot
 

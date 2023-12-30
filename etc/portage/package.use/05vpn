@@ -1,3 +1,7 @@
 
+# Enable JSON output in nftables
+net-firewall/nftables json
+
 # Prevent WireGuard from using wg-quick
 net-vpn/wireguard-tools -wg-quick
+
