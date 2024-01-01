@@ -9,7 +9,7 @@ It's recommended to install the boot files directly from Raspberry PI Foundation
 The boot for Raspberry PI is very different from a normal computer boot and requires proprietary firmware, so it's better to stick with official instructions for this step.
 That being said, clone the official precompiled kernel repository maintained by RPI Foundation:
 ```sh
-git clone -b stable --depth 1 https://github.com/raspberrypi/firmware.git
+git clone -b next --depth=1 https://github.com/raspberrypi/firmware.git
 ```
 Enter the source folder and make sure that it is up to date:
 ```sh
@@ -69,7 +69,7 @@ It's recommended to compile the kernel from Raspberry PI Foundation's official s
 We can be sure that the kernel in their sources is supported by Raspberry PI 4 and they also provide makescripts that generate the default configuration needed for Raspberry PI to work. This saves a lot of time in kernel configuration later on.
 That being said, clone the official kernel repository maintained by RPI Foundation:
 ```sh
-git clone -b stable --depth 1 https://github.com/raspberrypi/linux.git 
+git clone -b rpi-6.6.y --depth=1 https://github.com/raspberrypi/linux.git 
 ```
 Enter the source folder and make sure that it is up to date:
 ```sh
