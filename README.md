@@ -9,12 +9,9 @@ I use Open-RC, Netifrc, PipeWire, Sway-WM, Doas, and my own shell scripts.
 I do not use Systemd, Elogind, NetworkManager, GNOME, KDE or any desktop environment.
 
 I try not to use anything that:
-
-  1 - is bloated.
-
-  2 - tries to be too clever.
-
-  3 - is a NSA honeypot (except GitHub itself).
+  1. is bloated.
+  2. tries to be too clever.
+  3. is a NSA honeypot (except GitHub itself).
 
 ## Kernel
 
