@@ -11,7 +11,7 @@ I do not use Systemd, Elogind, NetworkManager, GNOME, KDE or any desktop environ
 I try not to use anything that:
   1. is bloated.
   2. tries to be too clever.
-  3. is a NSA honeypot (except GitHub itself).
+  3. is a NSA honeypot (except well...).
 
 ## Kernel
 
