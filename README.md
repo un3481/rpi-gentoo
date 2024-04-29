@@ -9,8 +9,11 @@ I use Open-RC, Netifrc, PipeWire, Sway-WM, Doas, and my own shell scripts.
 I do not use Systemd, Elogind, NetworkManager, GNOME, KDE or any desktop environment.
 
 I try not to use anything that:
+
   1 - is bloated.
+
   2 - tries to be too clever.
+
   3 - is a NSA honeypot (except GitHub itself).
 
 ## Kernel
@@ -19,4 +22,4 @@ I use the official kernel, modules, bootloader and firmware provided by Raspberr
 
 Sources from Raspberry-Pi Foundation can be found [here](https://github.com/raspberrypi/linux).
 
-Configuring the linux kernel to run properly on a Raspberry-Pi felt too much like reinventing the wheel.
+Manually configuring the linux kernel to run properly on a Raspberry-Pi felt too much like reinventing the wheel.
