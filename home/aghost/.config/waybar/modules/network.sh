@@ -118,7 +118,7 @@ waybar_json() {
 		local wpa_status if_wpa if_con_freq if_con_ssid
 
 		# get wpa_supplicant data
-		wpa_status=$(sudo wpa_cli status)
+		wpa_status=$(doas /usr/bin/wpa_cli status)
 		
 		# get wpa_supplicant interface
 		if_wpa=$(printf "$wpa_status" | grep "^Selected interface " | sed "s/^Selected interface //g" | sed "s/'//g")

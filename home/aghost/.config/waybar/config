@@ -9,7 +9,7 @@
 		"custom/vpn",
 		"custom/network",
 		"custom/bluetooth",
-		"wireplumber",
+		"costom/sound",
 		"memory",
 		"cpu",
 		"custom/freq",
@@ -50,7 +50,7 @@
 		"format": "{}% ",
 		"on-click": "foot -e htop"
 	},
-	"wireplumber": {
+	"custom/sound": {
 		"format": "{volume}% {icon}",
 		"format-muted": "󰝟",
 		"format-icons": {

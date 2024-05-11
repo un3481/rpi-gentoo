@@ -43,7 +43,7 @@ waybar_json() {
 		cpu=$i
 
 		# get cpu frequency
-		freq_iter=$(sudo cat "/sys/devices/system/cpu/${cpu}/cpufreq/cpuinfo_cur_freq")
+		freq_iter=$(doas /bin/cat "/sys/devices/system/cpu/${cpu}/cpufreq/cpuinfo_cur_freq")
 		freq_iter=$(printf "%s\n" "scale=1; $freq_iter/1000000" | bc -l)
 
 		# add info to tooltip
